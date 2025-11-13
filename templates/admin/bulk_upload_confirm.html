@@ -1,0 +1,33 @@
+{% extends 'admin/base_site.html' %}
+{% load i18n admin_urls static admin_modify %}
+
+{% block content %}
+<div id="content-main">
+    <p>Please select a **CSV or Excel** file to upload. All imported users will be assigned the temporary password <strong>"Welcome123!"</strong> and will be forced to change it on their first login.</p>
+    
+    <form action="{{ action_url }}" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+        
+        <fieldset class="module aligned">
+            <h2>File Upload</h2>
+            {% for field in form %}
+                {% if field.is_hidden %}
+                    {{ field }}
+                {% else %}
+                <div class="form-row">
+                    {{ field.errors }}
+                    <label for="{{ field.id_for_label }}" class="required">{{ field.label }}:</label>
+                    {{ field }}
+                    {% if field.help_text %}<p class="help">{{ field.help_text|safe }}</p>{% endif %}
+                </div>
+                {% endif %}
+            {% endfor %}
+        </fieldset>
+
+        <div class="submit-row">
+            <input type="submit" name="apply" value="{% translate 'Upload and Import' %}">
+        </div>
+    </form>
+</div>
+{% endblock %}

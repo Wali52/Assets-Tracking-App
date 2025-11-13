@@ -1,0 +1,19 @@
+# .gitignore content
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE files (e.g., VS Code, PyCharm)
+.idea/
+.vscode/
+
+# Django / Python specific
+db.sqlite3     # IMPORTANT: Never commit your local database file
+/venv/         # Your virtual environment folder
+/media/        # User-uploaded files
+/static/       # Collected static files
+
+# Environment variables
+.env

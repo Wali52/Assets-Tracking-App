@@ -63,7 +63,6 @@ ROOT_URLCONF = 'finalproject.urls'
 # settings.py
 
 import os
-# from pathlib import Path
 
 # Assuming BASE_DIR is defined like this (adjust if yours is different)
 # If using Django 4.0+

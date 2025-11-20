@@ -22,10 +22,10 @@ class BulkUploadFileForm(forms.Form):
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
     # Standard Admin settings
-    list_display = ('email', 'first_name', 'last_name', 'role', 'is_staff', 'must_change_password')
+    list_display = ('id','email', 'first_name', 'last_name', 'role', 'is_staff', 'must_change_password')
+    readonly_fields = ('id',)
     list_filter = ('role', 'is_staff', 'is_active', 'must_change_password', 'organization')
     search_fields = ('email', 'first_name', 'last_name')
-    
     # Enable ALL custom actions in ONE list
     actions = ['bulk_import_users_action', 'export_users_action'] 
 

@@ -47,6 +47,8 @@ INSTALLED_APPS = [
     'assignments',         # New App
     'assignment_history',
     # 'simple-jwt',
+    # Swagger/OpenAPI
+    'drf_spectacular',
 ]
 
 MIDDLEWARE = [
@@ -121,6 +123,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+# AUTH_USER_MODEL = 'users.User'
 AUTH_USER_MODEL = 'users.User'
 
 
@@ -148,9 +151,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
+    'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-    )
+    ],
+
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
 AUTH_USER_MODEL = 'users.User'
@@ -162,3 +167,32 @@ SIMPLE_JWT = {
 
 
 
+# SPECTACULAR SETTINGS (OpenAPI/Swagger)
+SPECTACULAR_SETTINGS = {
+    # REQUIRED: TITTLE for the documentation site
+    'TITLE': 'Asset Tracking API',
+    
+    # OPTIONAL: Description of the project
+    'DESCRIPTION': 'Multi-Tenant Asset Tracking and Management System API.',
+    
+    # OPTIONAL: Version number
+    'VERSION': '1.0.0',
+    
+    # OPTIONAL: Schema file format (YAML, JSON)
+    'SERVE_INCLUDE_SCHEMA': False,  # True by default, but we serve it separately
+    
+    # OPTIONAL: Customize where the base ViewSets are located
+    'COMPONENT_SPLIT_REQUEST': True, # Reduces generated file size for large projects
+
+    # OPTIONAL: AUTHENTICATION (For Swagger UI's "Authorize" button)
+    # This configuration is CRITICAL for JWT to work in Swagger UI
+    'SECURITY': [
+        {
+            'BearerAuth': {
+                'type': 'http',
+                'scheme': 'bearer',
+                'bearerFormat': 'JWT',
+            }
+        }
+    ],
+}

@@ -3,4 +3,7 @@ from .models import Organization
 
 @admin.register(Organization)
 class OrganizationAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'created_at')
+    list_display = ('pk','id', 'name', 'created_at')
+    readonly_fields = ('pk',)
+
+

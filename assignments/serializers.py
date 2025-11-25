@@ -3,6 +3,7 @@ from .models import Assignment
 from assets.models import Asset
 from django.utils import timezone
 from decimal import Decimal
+from django.core.exceptions import ValidationError # <-- ADDED FOR full_clean()
 
 # Assuming these imports are available in your environment
 # from organizations.models import OrgSettings 
@@ -67,32 +68,33 @@ class AssignmentSerializer(serializers.ModelSerializer):
         employee = data.get("employee") or (self.instance.employee if self.instance else None)
         organization = data.get("organization") or (self.instance.organization if self.instance else None)
 
-    # Run existing DRF validation for maintenance & active assignment
+        # Run existing DRF validation for maintenance & active assignment
         if asset:
-             if asset.status == "Maintenance":
+            if asset.status == "Maintenance":
                 raise serializers.ValidationError({
                 "asset": "This asset is under maintenance and cannot be assigned."
             })
 
-        active_assignments = Assignment.objects.filter(
-            asset=asset,
-            status__in=["Active", "Overdue"]
-        )
-        if self.instance:
-            active_assignments = active_assignments.exclude(id=self.instance.id)
-        if active_assignments.exists():
-            raise serializers.ValidationError({
-                "asset": "This asset is already linked to an active or overdue assignment."
-            })
+            active_assignments = Assignment.objects.filter(
+                asset=asset,
+                status__in=["Active", "Overdue"]
+            )
+            if self.instance:
+                active_assignments = active_assignments.exclude(id=self.instance.id)
+            if active_assignments.exists():
+                raise serializers.ValidationError({
+                    "asset": "This asset is already linked to an active or overdue assignment."
+                })
 
-    # ✅ NEW: Organization check
+        # ✅ CRITICAL: Organization check (MUST BE ACTIVE)
         if asset and employee and organization:
+            # Check if the asset's organization matches the employee's organization
             if asset.organization != employee.organization:
                 raise serializers.ValidationError({
-                "employee": "This employee belongs to a different organization than the asset."
-            })
+                    "employee": "Security Error: This employee belongs to a different organization than the asset. Cross-tenant assignment is forbidden."
+                })
 
-    # Optional: Call model's clean() for any other validations
+        # Optional: Call model's clean() for any other validations
         temp_instance = self.instance or Assignment(**data)
         try:
             temp_instance.full_clean()
@@ -128,7 +130,7 @@ class AssignmentSerializer(serializers.ModelSerializer):
             asset = assignment.asset
             asset.status = "Available"
             asset.save()
-
+            
             # The fine calculation logic here is complex and duplicated from the ViewSet's action.
             # It's better to delegate this to a dedicated method or the @action, but
             # ensuring it uses the OrgSettings from the assignment's organization.
@@ -146,8 +148,8 @@ class AssignmentSerializer(serializers.ModelSerializer):
             
             # Set status to Returned (if not already handled)
             if assignment.status not in ["Returned", "Lost"]:
-                 assignment.status = "Returned"
-                 assignment.save()
+                assignment.status = "Returned"
+                assignment.save()
 
             return assignment
         

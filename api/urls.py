@@ -125,5 +125,4 @@ urlpatterns = [
     # 2. Authenticated API endpoints (all resources managed by the router)
     path('', include(router.urls)),
 
-    # 3. JWT Path REMOVED from this file. It belongs in the project's main urls.py.
 ]

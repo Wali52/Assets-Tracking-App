@@ -699,7 +699,7 @@
 #         Applies multi-tenancy filter via the Mixin.
 #         """
 #         return super().get_queryset()
-
+from decimal import Decimal
 import uuid
 from rest_framework import generics, status
 from rest_framework.response import Response
@@ -711,6 +711,10 @@ from datetime import timedelta
 from django.db import transaction
 # Importing for dynamic fine rate lookup
 from django.db.models import F 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from django.db.models import Count
 
 # FIX 1: Import the mixin directly from the project root
 from multi_tenant_mixin import MultiTenantMixin 
@@ -851,15 +855,38 @@ class UserViewSet(MultiTenantMixin, viewsets.ModelViewSet):
 
 
 # 4. Department ViewSet (Tenant Admin Only)
-class DepartmentViewSet(MultiTenantMixin, viewsets.ModelViewSet):
-    """Allows Admins to manage departments. Requires OrgAccessPermission."""
+class DepartmentViewSet(viewsets.ModelViewSet):
+    """
+    Allows Admins to manage departments. Requires OrgAccessPermission.
+    Data is scoped by organization (multi-tenancy).
+    """
     serializer_class = DepartmentSerializer
     queryset = Department.objects.all().order_by('name')
-    # --- CRITICAL CHANGE: Only Admins manage Departments ---
     permission_classes = [OrgAccessPermission]
 
+    def get_queryset(self):
+        user = self.request.user
+        
+        if user.is_superuser:
+            # Superusers see all departments
+            return super().get_queryset()
+
+        if user.is_authenticated and user.organization:
+            # All authenticated users (Admin/Employee) can view departments 
+            # within their organization, but only Admins can list them due to 
+            # the OrgAccessPermission applied at the class level (has_permission).
+            return super().get_queryset().filter(organization=user.organization).order_by('name')
+
+        return self.queryset.none()
+
     def perform_create(self, serializer):
-        super().perform_create(serializer)
+        """Set organization automatically on creation."""
+        if self.request.user.is_authenticated and self.request.user.organization:
+            # The permission class ensures only Admins/Superusers reach here.
+            serializer.save(organization=self.request.user.organization)
+        else:
+            # Defensive fallback
+            super().perform_create(serializer)
 
 
 # 5. AssetCategory ViewSet (Tenant Admin Only)
@@ -912,7 +939,7 @@ class AssignmentViewSet(viewsets.ModelViewSet):
     serializer_class = AssignmentSerializer
     # Order by creation date to show recent assignments first
     queryset = Assignment.objects.all().order_by('-assigned_date')
-    permission_classes = [AssignmentPermission] # Assuming this handles create/update permissions
+    permission_classes = [AssignmentPermission] 
 
     def get_queryset(self):
         user = self.request.user
@@ -928,8 +955,7 @@ class AssignmentViewSet(viewsets.ModelViewSet):
                 # 2. Employees are limited to viewing only their own assignments
                 return queryset.filter(employee=user)
             
-            # 3. Admins (and other privileged roles) see all assignments within their tenant
-            # This is the fix to prevent Admins from seeing ALL data across all organizations.
+            # 3. Admins see all assignments within their tenant
             return queryset
 
         # Unauthenticated or users without an organization see nothing
@@ -938,23 +964,17 @@ class AssignmentViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         """Assign asset and link to organization/admin."""
         if self.request.user.is_authenticated:
-            # Use imported constants if possible, or ensure strings match the model
-            # Also ensures that the user's organization is correctly injected for tenancy
-            serializer.save(
+            # Ensures the user's organization and assigned_by_user are set
+            assignment = serializer.save(
                 assigned_by_user=self.request.user,
                 organization=self.request.user.organization
             )
+            # Ensures model-level clean() validations are enforced after saving related objects
+            assignment.full_clean()
+            assignment.save()
         else:
-            # This case should be handled by AssignmentPermission, but included defensively
+            # Should be blocked by permissions, but included defensively
             super().perform_create(serializer)
-
-    # def perform_update(self, serializer):
-    #     """
-    #     Prevent asset reassignment on update. Logic is now primarily in the serializer.
-    #     """
-    #     # Removed redundant logic: The asset change prevention is now handled robustly 
-    #     # by AssignmentSerializer.validate_asset, so the view is cleaner.
-    #     serializer.save()
 
     @action(detail=True, methods=['post'], url_path='return-asset')
     def return_asset(self, request, pk=None):
@@ -962,7 +982,7 @@ class AssignmentViewSet(viewsets.ModelViewSet):
         Handle asset return:
         1. Update assignment status to 'Returned'.
         2. Set returned_date.
-        3. Calculate fine if overdue.
+        3. Calculate fine if overdue using OrgSettings.fine_per_day.
         4. Set asset status to 'Available'.
         """
         try:
@@ -978,30 +998,25 @@ class AssignmentViewSet(viewsets.ModelViewSet):
         assignment.returned_date = timezone.now().date()
 
         # Calculate fine
-        fine_amount = Decimal("500.00")
+        fine_amount = Decimal("0.00")
         if assignment.due_date and assignment.returned_date > assignment.due_date:
-            # NOTE: Assuming OrgSettings is available or linked to the organization
-            try:
-                # This assumes a reverse relationship from organization to settings
-                org_settings = assignment.organization.org_settings.first() 
-            except AttributeError:
-                # Fallback if the reverse relationship name is different or missing
-                # org_settings = OrgSettings.objects.filter(organization=assignment.organization).first()
-                pass
-                
-            # Replacing OrgSettings.objects.filter with the assumed linkage for better performance
-            # Ensure you have the correct way to get settings (OrgSettings model required here)
-            # The original code used:
-            # org_settings = OrgSettings.objects.filter(organization=assignment.organization).first()
-            # fine_per_day = org_settings.fine_per_day if org_settings and org_settings.fine_per_day else Decimal("0.00")
-            
-            # --- MOCK FINE CALCULATION (Please use your actual OrgSettings logic here) ---
-            fine_per_day = Decimal("5.00") # Mocking the fine rate for clarity
-            # --- END MOCK ---
-            
             days_late = (assignment.returned_date - assignment.due_date).days
+            
+            fine_per_day = Decimal("0.00")
             if days_late > 0:
-                fine_amount = Decimal(days_late) * fine_per_day
+                try:
+                    # --- DYNAMIC FINE CALCULATION: Fetching fine rate from OrgSettings ---
+                    # Use the organization linked to the assignment to fetch its settings
+                    org_settings = OrgSettings.objects.get(organization=assignment.organization)
+                    fine_per_day = org_settings.fine_per_day
+                    # --- END DYNAMIC FINE CALCULATION ---
+                except OrgSettings.DoesNotExist:
+                    # If settings don't exist, fine_per_day remains Decimal("0.00")
+                    pass
+                
+                # Calculate fine only if a rate exists and the assignment is late
+                if fine_per_day and fine_per_day > Decimal("0.00"):
+                    fine_amount = Decimal(days_late) * fine_per_day
 
         assignment.fine_amount = fine_amount
         assignment.save()
@@ -1011,20 +1026,9 @@ class AssignmentViewSet(viewsets.ModelViewSet):
         asset.status = 'Available'
         asset.save()
 
-        # Reload the assignment instance and serialize (important for live_fine field)
+        # Reload the assignment instance and serialize
         serializer = self.get_serializer(assignment)
         return Response(serializer.data, status=status.HTTP_200_OK)
-    
-    def perform_create(self, serializer):
-        assignment = serializer.save(
-        assigned_by_user=self.request.user,
-        organization=self.request.user.organization
-    )
-    # Ensures model-level clean() validations are enforced
-        assignment.full_clean()
-        assignment.save()
-
-
 
 # 8. Assignment History ViewSet (Read Only - Multi-Role Access)
 class AssignmentHistoryViewSet(MultiTenantMixin, viewsets.ReadOnlyModelViewSet):
@@ -1062,3 +1066,65 @@ class AssignmentHistoryViewSet(MultiTenantMixin, viewsets.ReadOnlyModelViewSet):
 # Authentication views (keeping them as provided)
 class OrganizationTokenObtainPairView(OrganizationTokenObtainPairView):
     serializer_class = OrganizationTokenObtainPairSerializer
+    
+    
+class OrganizationMetricsView(APIView):
+    """
+    API endpoint to retrieve key asset statistics for the logged-in user's organization.
+    Requires the user to be authenticated and belong to an organization.
+    """
+    permission_classes = [IsAuthenticated] # Assuming you have a standard IsAuthenticated permission
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+
+        # 1. Validation: Ensure user is linked to an organization
+        if not user.is_authenticated or not user.organization:
+            return Response(
+                {"detail": "User must be authenticated and assigned to an organization."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        organization = user.organization
+        
+        # Start filtering the base queryset for the organization
+        base_queryset = Asset.objects.filter(organization=organization)
+        
+        # --- A. Calculate Status Metrics (Available, Assigned, Maintenance, etc.) ---
+        status_counts = base_queryset.values('status').annotate(count=Count('status')).order_by()
+        
+        # Convert the aggregated list to a more useful dictionary format
+        status_metrics = {item['status']: item['count'] for item in status_counts}
+        
+        # --- B. Calculate Category Metrics (Laptops, Monitors, etc.) ---
+        # Annotate by category name for better reporting
+        category_counts = base_queryset.values('category__name').annotate(count=Count('category__name')).order_by()
+        
+        # Rename keys for clarity
+        category_metrics = {item['category__name']: item['count'] for item in category_counts if item['category__name']}
+
+        # --- C. Calculate High-Level Totals ---
+        total_assets = base_queryset.count()
+        
+        # --- D. Calculate Overdue Assignments (Requires joining Assignment model) ---
+        # Assuming you have an Assignment model imported
+        try:
+            from assignments.models import Assignment
+            overdue_count = Assignment.objects.filter(
+                organization=organization,
+                status='Overdue'
+            ).count()
+        except Exception:
+            # Handle case where Assignment model is not imported/available
+            overdue_count = 0 
+            
+        # --- Final Response Structure ---
+        response_data = {
+            "organization_name": organization.name,
+            "total_assets": total_assets,
+            "metrics_by_status": status_metrics,
+            "metrics_by_category": category_metrics,
+            "overdue_assignments": overdue_count,
+        }
+
+        return Response(response_data, status=status.HTTP_200_OK)

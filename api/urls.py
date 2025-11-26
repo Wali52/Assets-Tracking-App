@@ -101,6 +101,7 @@ from .views import (
     AssignmentViewSet,
     AssignmentHistoryViewSet,
     InitialSetupView,
+    
 )
 
 # Initialize the primary API router for all authenticated endpoints
@@ -124,5 +125,7 @@ urlpatterns = [
 
     # 2. Authenticated API endpoints (all resources managed by the router)
     path('', include(router.urls)),
+    
+    # path('users/reset-password/', AdminResetUserPasswordView.as_view(), name='admin-reset-user-password'),
 
 ]

@@ -1,4 +1,5 @@
 from rest_framework import permissions
+from rest_framework.permissions import BasePermission
 
 # Assuming role definitions are consistent across the project
 ROLE_ADMIN = "Admin"
@@ -118,3 +119,13 @@ class AssignmentPermission(permissions.BasePermission):
                 return is_their_assignment
             
         return False
+    
+    
+# new ----
+
+class MustChangePasswordPermission(BasePermission):
+    message = "You must change your password before accessing the system."
+
+    def has_permission(self, request, view):
+        user = request.user
+        return not user.must_change_password

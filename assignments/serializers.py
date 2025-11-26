@@ -48,6 +48,7 @@ class AssignmentSerializer(serializers.ModelSerializer):
             'assigned_by_name',
             'fine_amount',
             'live_fine'
+            
         ]
 
     # ----------------------------

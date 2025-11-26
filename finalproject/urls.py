@@ -31,6 +31,11 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView # NEW IMPORT
 from api.authentication_views import OrganizationTokenObtainPairView
 from api.views import OrganizationMetricsView
+from api.authentication_views import ChangePasswordView
+from django.urls import path
+
+
+
 urlpatterns = [
     # Django Admin Site
     path('admin/', admin.site.urls),
@@ -41,7 +46,7 @@ urlpatterns = [
     # JWT Authentication Endpoints
     path('api/v1/auth/token/', OrganizationTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/v1/auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    
+    path('api/v1/change-password/', ChangePasswordView.as_view(), name='change-password'),
     # Organization Metrics
     path('api/orgsettings/metrics/', OrganizationMetricsView.as_view(), name='organization-metrics'),
 

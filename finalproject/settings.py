@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     # 'simple-jwt',
     # Swagger/OpenAPI
     'drf_spectacular',
+    'api',
 ]
 
 MIDDLEWARE = [

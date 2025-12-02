@@ -1,0 +1,41 @@
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+
+
+from .views import (
+    OrganizationViewSet,
+    OrgSettingsViewSet,
+    UserViewSet,
+    DepartmentViewSet,
+    AssetCategoryViewSet,
+    AssetViewSet,
+    AssignmentViewSet,
+    AssignmentHistoryViewSet,
+    InitialSetupView,
+    
+)
+
+# Initialize the primary API router for all authenticated endpoints
+router = DefaultRouter()
+
+# Register all the ViewSets with the router
+# Using 'basename' for all ViewSets is generally good practice, even if not strictly required here.
+router.register(r'organizations', OrganizationViewSet)
+router.register(r'org-settings', OrgSettingsViewSet, basename='org-settings') 
+router.register(r'users', UserViewSet)
+router.register(r'departments', DepartmentViewSet)
+router.register(r'asset-categories', AssetCategoryViewSet)
+router.register(r'assets', AssetViewSet)
+router.register(r'assignments', AssignmentViewSet)
+router.register(r'assignment-history', AssignmentHistoryViewSet)
+
+# The urlpatterns combine the dedicated setup endpoint and the router-generated endpoints
+urlpatterns = [
+    # 1. Public, unauthenticated endpoint for initial setup (e.g., /api/v1/setup/)
+    path('setup/', InitialSetupView.as_view(), name='initial-setup'), 
+
+    # 2. Authenticated API endpoints (all resources managed by the router)
+    path('', include(router.urls)),
+    
+    
+]

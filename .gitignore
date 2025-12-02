@@ -1,0 +1,16 @@
+# Frontend: React
+asset_tracking_frontend/node_modules/
+asset_tracking_frontend/build/
+asset_tracking_frontend/.env
+
+# Backend: Python/Django (from your existing backend .gitignore)
+finalproject/__pycache__/
+finalproject/*.py[cod]
+finalproject/*$py.class
+finalproject/.idea/
+finalproject/.vscode/
+finalproject/db.sqlite3
+finalproject/venv/
+finalproject/media/
+finalproject/static/
+finalproject/.env

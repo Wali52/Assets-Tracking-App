@@ -1,4 +1,4 @@
-@tailwind base;
+/* /* @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
@@ -69,4 +69,98 @@ button:focus-visible {
   button {
     background-color: #f9f9f9;
   }
+} */
+
+/* * This file contains the three mandatory Tailwind directives.
+ * All default, conflicting styles (like those for :root, body, h1, and buttons)
+ * that may have come from the starter template have been removed.
+ * This ensures Tailwind's utility classes (used in AssetManagementApp.jsx)
+ * can take full effect without being overridden.
+ */
+
+
+/* Optional: Add a custom font and ensure no default body margins exist */
+/* body {
+  font-family: 'Inter', sans-serif;
+  margin: 0;
+} */ 
+
+/* @tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+|-------------------------------------------------------------------------------
+| Custom Base Styles
+|-------------------------------------------------------------------------------
+| This section uses the @layer feature to apply standard styles that should be
+| set at the base level, such as the font family.
+*/
+/* @layer base {
+  body {
+    /* Sets the 'Inter' font (assumed to be available or added via your index.html) */
+    /* font-family: 'Inter', sans-serif; 
+    /* Removes default browser margins for full layout control by React/Tailwind */
+    /* margin: 0;
+  }
+}  */ 
+
+/* src/index.css
+Minimal style ported from your single-file CSS.
+*/
+@import url('[https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap](https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap)');
+
+:root {
+--bg: #f7f9fc;
+--card: #ffffff;
+--muted: #6b7280;
+--primary: #4f46e5;
+--success: #10b981;
+--danger: #ef4444;
 }
+
+* { box-sizing: border-box; }
+
+body {
+font-family: 'Inter', sans-serif;
+margin: 0;
+background: var(--bg);
+color: #111827;
+}
+
+/* Cards */
+.card {
+padding: 24px;
+background: var(--card);
+border-radius: 12px;
+box-shadow: 0 10px 15px -3px rgba(0,0,0,0.08);
+}
+
+/* Common */
+.card-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 12px; color: #111827; }
+.login-page { min-height: 100vh; display:flex; align-items:center; justify-content:center; padding: 20px; }
+.login-info { color: var(--muted); margin-bottom: 14px; }
+
+/* Inputs & Buttons */
+.input-field { width:100%; padding:12px; border:1px solid #e5e7eb; border-radius:8px; margin-bottom:8px; }
+.btn { padding: 10px 14px; border-radius: 8px; border: none; cursor: pointer; font-weight:600; }
+.btn-primary { background: var(--primary); color: white; }
+.btn-success { background: var(--success); color: white; }
+.btn-danger { background: var(--danger); color: white; }
+
+/* Dashboard header */
+.dashboard-header { background: #fff; padding: 14px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+.header-content { max-width: 1200px; margin: 0 auto; padding: 0 16px; display:flex; justify-content: space-between; align-items:center; }
+.header-title { font-weight: 800; color: var(--primary); }
+
+/* Main */
+.dashboard-main { max-width: 1200px; margin: 32px auto; padding: 0 16px; }
+.dashboard-layout-grid { display: grid; gap: 20px; }
+
+/* API status */
+.api-status-box { padding: 12px; border-radius: 8px; font-family: monospace; }
+.status-info { background: #eef2ff; color: #3730a3; }
+.status-error { background: #fee2e2; color: #991b1b; }
+
+.alert { padding: 10px; border-radius:8px; margin-top:8px; }
+.alert-error { background: #fee2e2; color: #991b1b; }

@@ -1,0 +1,92 @@
+/* Main container */
+.datatable-container {
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+/* Header */
+.datatable-header {
+    padding: 16px;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.datatable-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #2d2d2d;
+}
+
+.datatable-actions {
+    display: flex;
+    gap: 10px;
+}
+
+/* Loading */
+.datatable-loading {
+    padding: 24px;
+    text-align: center;
+    color: #4f46e5;
+    font-size: 14px;
+}
+
+/* Error */
+.datatable-error {
+    padding: 24px;
+    text-align: center;
+    color: #dc2626;
+    font-weight: 500;
+}
+
+/* Table wrapper */
+.datatable-table-wrapper {
+    overflow-x: auto;
+}
+
+/* Table base */
+.datatable-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 600px;
+}
+
+/* Table header */
+.datatable-table thead {
+    background: #f9fafb;
+}
+
+.datatable-table th {
+    padding: 12px 20px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+/* Table rows */
+.datatable-table td {
+    padding: 12px 20px;
+    font-size: 14px;
+    color: #374151;
+    border-bottom: 1px solid #e5e7eb;
+    white-space: nowrap;
+}
+
+/* Hover effect */
+.datatable-table tbody tr:hover {
+    background: rgba(99, 102, 241, 0.07); /* light indigo */
+    transition: 0.15s ease-in-out;
+}
+
+/* Empty message */
+.datatable-empty {
+    text-align: center;
+    padding: 16px;
+    color: #6b7280;
+}

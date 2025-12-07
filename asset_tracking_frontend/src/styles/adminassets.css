@@ -1,0 +1,36 @@
+.page-title {
+    font-size: 28px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    color: #222;
+}
+
+.btn-primary {
+    padding: 8px 12px;
+    background: #4a60e5;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.btn-edit {
+    background: transparent;
+    border: none;
+    color: #3247d5;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.status-badge {
+    padding: 4px 10px;
+    font-size: 12px;
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+/* status colors */
+.status-green { background: #d7f7d7; color: #0b7a0b; }
+.status-blue { background: #dbe6ff; color: #0b3fe0; }
+.status-yellow { background: #fff4c2; color: #7a6400; }
+.status-gray { background: #e6e6e6; color: #444; }

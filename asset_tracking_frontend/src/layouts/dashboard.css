@@ -1,0 +1,136 @@
+/* --- Loading Spinner --- */
+.spinner {
+  animation: spin 1s linear infinite;
+  margin-right: 8px;
+}
+
+.spinner-md {
+  height: 24px;
+  width: 24px;
+}
+
+.spinner-lg {
+  height: 40px;
+  width: 40px;
+}
+
+.spinner-circle {
+  stroke: currentColor;
+  opacity: 0.25;
+}
+
+.spinner-path {
+  fill: currentColor;
+  opacity: 0.75;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* --- Loading Screen --- */
+.loading-screen {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3f4f6;
+}
+
+.loading-text {
+  font-size: 18px;
+  color: #555;
+}
+
+/* --- Navbar Container --- */
+.navbar {
+  background: white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.navbar-inner {
+  max-width: 1200px;
+  margin: auto;
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Branding */
+.navbar-brand {
+  font-weight: bold;
+  font-size: 20px;
+  color: #4F46E5;
+  display: flex;
+  align-items: center;
+}
+
+.role-badge {
+  background: #EEF2FF;
+  padding: 2px 8px;
+  font-size: 11px;
+  margin-left: 8px;
+  border-radius: 8px;
+  color: #4338CA;
+}
+
+/* Navigation links */
+.navbar-links {
+  display: flex;
+  gap: 16px;
+}
+
+.nav-link {
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #555;
+  transition: 0.2s;
+}
+
+.nav-link:hover {
+  background: #f3f4f6;
+  color: #111;
+}
+
+.nav-link.active {
+  background: #EEF2FF;
+  color: #4F46E5;
+  font-weight: 500;
+}
+
+/* Right side */
+.welcome-text {
+  font-size: 14px;
+  color: #666;
+  margin-right: 10px;
+}
+
+.logout-btn {
+  padding: 8px 14px;
+  background: #DC2626;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.logout-btn:hover {
+  background: #B91C1C;
+}
+
+/* Layout */
+.dashboard-container {
+  min-height: 100vh;
+  background: #F9FAFB;
+}
+
+.dashboard-main {
+  max-width: 1200px;
+  margin: auto;
+  padding: 24px;
+}

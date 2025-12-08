@@ -143,73 +143,71 @@
 
 // export default EmployeeAssets;
 
-import React from 'react';
-import DashboardLayout, { LoadingSpinner } from '../layouts/DashboardLayout.jsx';
-import DataTable from '../components/DataTable.jsx';
-import { useApiData } from '../hooks/useApiData.js';
-import { useAuth } from '../context/AuthContext.jsx';
+import React from "react";
+import DashboardLayout from "../layouts/DashboardLayout.jsx";
+import DataTable from "../components/DataTable.jsx";
+import { useApiData } from "../hooks/useApiData.js";
+// import "../styles/employeeassets.css";
 
 const EmployeeAssets = () => {
-    const { currentUser, isAuthenticated, loading: authLoading, role } = useAuth();
+    // Employee should load only assignments belonging to HIM
+    const { data: assignments, loading, error } = useApiData("assignments/");
 
-    const userId = currentUser?.id;
-    const endpoint = role === 'Employee' && userId ? `assignments/?user=${userId}` : 'assets/';
+    const columns = [
+        { header: "Asset Tag", accessor: "asset_tag" },
+        { header: "Asset Name", accessor: "asset_name" },
+        { header: "Assigned Date", accessor: "assigned_date" },
+        { header: "Due Date", accessor: "due_date" },
+        { header: "Returned Date", accessor: "returned_date" },
 
-    const { data: assignedAssets, loading: assetsLoading, error } = useApiData(endpoint);
+        {
+            header: "Status",
+            accessor: "status",
+            cell: (row) => {
+                let color =
+                    row.status === "Active"
+                        ? "status-blue"
+                        : row.status === "Returned"
+                        ? "status-green"
+                        : "status-gray";
 
-    const assetColumns = [
-        { header: 'Asset Name', accessor: 'name' },
-        { header: 'Serial Number', accessor: 'serial_number' },
-        { header: 'Category', accessor: 'category' },
-        { 
-            header: 'Status', 
-            accessor: 'status', 
-            cell: (asset) => {
-                const status = asset.status;
-                const colorClass = status === 'Assigned' ? 'status-assigned' :
-                                   status === 'In Repair' ? 'status-repair' :
-                                   'status-default';
-                return <span className={`status-badge ${colorClass}`}>{status}</span>;
-            }
+                return <span className={`status-badge ${color}`}>{row.status}</span>;
+            },
         },
-        { header: 'Assigned Date', accessor: 'assignment_date' },
-        { 
-            header: 'Actions', 
-            cell: (asset) => (
-                <button 
-                    onClick={() => console.log(`Requesting return for asset ${asset.id}`)}
-                    className="btn-request"
-                >
-                    Request Return
-                </button>
-            )
+
+        {
+            header: "Actions",
+            cell: (row) => (
+                <>
+                    {row.status === "Active" ? (
+                        <button
+                            onClick={() => console.log("Request return for:", row.id)}
+                            className="btn-request"
+                        >
+                            Request Return
+                        </button>
+                    ) : (
+                        <span className="text-muted">No Action</span>
+                    )}
+                </>
+            ),
         },
     ];
-
-    if (authLoading || assetsLoading) {
-        return (
-            <div className="loading-container">
-                <LoadingSpinner />
-                <span className="loading-text">Loading your assets...</span>
-            </div>
-        );
-    }
-
-    const userName = `${currentUser?.first_name || ''} ${currentUser?.last_name || ''}`.trim() || 'Employee';
 
     return (
         <DashboardLayout>
             <h1 className="page-title">My Assigned Assets</h1>
-            <p className="page-subtitle">
-                Showing all equipment currently assigned to {userName}.
-            </p>
-            <DataTable 
-                title={`Assets for ${userName}`}
-                data={assignedAssets}
-                columns={assetColumns}
-                loading={false} // Loading handled above
+
+            <DataTable
+                title="Assets Assigned to You"
+                data={assignments}
+                columns={columns}
+                loading={loading}
                 error={error}
             />
+        {/* </DashboardLayout> */}
+    {/* ); */}
+{/* }; */}
 
             {/* Inline CSS */}
             <style>{`

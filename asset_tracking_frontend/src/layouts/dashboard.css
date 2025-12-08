@@ -1,136 +1,523 @@
-/* --- Loading Spinner --- */
+/*
+|--------------------------------------------------------------------------
+| GLOBAL CSS VARIABLES
+|--------------------------------------------------------------------------
+| Define key colors and values for easy management and consistency.
+*/
+:root {
+    /* Primary Color Palette (Blue) */
+    --color-primary: #4F46E5;        /* Main Blue */
+    --color-primary-dark: #4338CA;   /* Darker Blue for hover/active */
+    --color-primary-light: #EEF2FF;  /* Light Blue for light backgrounds */
+    
+    /* Danger/Logout Color Palette (Red) */
+    --color-danger: #DC2626;         /* Main Red */
+    --color-danger-dark: #B91C1C;    /* Darker Red for hover */
+    
+    /* Layout & Background Colors */
+    --color-sidebar-bg: #1E1E2F;     /* Dark Sidebar Background */
+    --color-bg-light: #F9FAFB;       /* Main Content Background */
+    --color-bg-white: #ffffff;
+    
+    /* Text & Border Colors */
+    --color-text-dark: #111;
+    --color-text-medium: #555;
+    --color-border-light: #d1d5db;   /* Light gray border for inputs/cards */
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| GLOBAL RESETS & TYPOGRAPHY
+|--------------------------------------------------------------------------
+*/
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    color: var(--color-text-dark);
+}
+
+/* --- Headings --- */
+.header-primary {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: #2d3748; /* Darker heading color */
+    margin-bottom: 24px;
+}
+
+/*
+|--------------------------------------------------------------------------
+| LOADING SPINNER
+|--------------------------------------------------------------------------
+*/
 .spinner {
-  animation: spin 1s linear infinite;
-  margin-right: 8px;
+    animation: spin 1s linear infinite;
+    margin-right: 8px;
+    display: inline-block;
+    vertical-align: middle;
 }
 
 .spinner-md {
-  height: 24px;
-  width: 24px;
+    height: 24px;
+    width: 24px;
 }
 
 .spinner-lg {
-  height: 40px;
-  width: 40px;
+    height: 40px;
+    width: 40px;
 }
 
+/* Use stroke for the actual SVG path */
 .spinner-circle {
-  stroke: currentColor;
-  opacity: 0.25;
+    stroke: currentColor;
+    opacity: 0.25;
 }
 
 .spinner-path {
-  fill: currentColor;
-  opacity: 0.75;
+    stroke: currentColor; 
+    opacity: 0.75;
 }
 
 @keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 /* --- Loading Screen --- */
 .loading-screen {
-  height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f3f4f6;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-bg-light);
 }
 
 .loading-text {
-  font-size: 18px;
-  color: #555;
+    font-size: 18px;
+    color: var(--color-text-medium);
 }
 
-/* --- Navbar Container --- */
-.navbar {
-  background: white;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+
+/*
+|--------------------------------------------------------------------------
+| LAYOUT STRUCTURE
+|--------------------------------------------------------------------------
+*/
+
+.layout-container {
+    display: flex;
+    min-height: 100vh;
+    width: 100%;
+    background: var(--color-bg-light);
 }
 
-.navbar-inner {
-  max-width: 1200px;
-  margin: auto;
-  padding: 16px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+/* Main content area wrapper */
+.layout-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
-/* Branding */
-.navbar-brand {
-  font-weight: bold;
-  font-size: 20px;
-  color: #4F46E5;
-  display: flex;
-  align-items: center;
+/* --- Top Navbar inside layout-content --- */
+.navbar-top {
+    background: var(--color-bg-white);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    padding: 12px 24px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    z-index: 10;
 }
 
-.role-badge {
-  background: #EEF2FF;
-  padding: 2px 8px;
-  font-size: 11px;
-  margin-left: 8px;
-  border-radius: 8px;
-  color: #4338CA;
-}
-
-/* Navigation links */
-.navbar-links {
-  display: flex;
-  gap: 16px;
-}
-
-.nav-link {
-  padding: 8px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  color: #555;
-  transition: 0.2s;
-}
-
-.nav-link:hover {
-  background: #f3f4f6;
-  color: #111;
-}
-
-.nav-link.active {
-  background: #EEF2FF;
-  color: #4F46E5;
-  font-weight: 500;
-}
-
-/* Right side */
-.welcome-text {
-  font-size: 14px;
-  color: #666;
-  margin-right: 10px;
-}
-
-.logout-btn {
-  padding: 8px 14px;
-  background: #DC2626;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: 0.2s;
-}
-
-.logout-btn:hover {
-  background: #B91C1C;
-}
-
-/* Layout */
-.dashboard-container {
-  min-height: 100vh;
-  background: #F9FAFB;
-}
-
+/* Main content area for dashboards */
 .dashboard-main {
-  max-width: 1200px;
-  margin: auto;
-  padding: 24px;
+    flex: 1;
+    padding: 32px; /* Increased padding for better spacing */
+    min-height: calc(100vh - 55px); /* Adjusted height based on top navbar */
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| SIDEBAR
+|--------------------------------------------------------------------------
+*/
+.sidebar {
+    width: 260px; /* Slightly wider sidebar */
+    background: var(--color-sidebar-bg);
+    padding: 24px 16px;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    transition: width 0.3s;
+}
+
+.sidebar-header {
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
+}
+
+.sidebar-title {
+    font-size: 24px; /* Larger title */
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    color: var(--color-primary); /* Use primary color for branding contrast */
+    text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.2);
+}
+
+.sidebar-role {
+    background: var(--color-primary); 
+    color: white;
+    padding: 2px 8px;
+    font-size: 11px;
+    border-radius: 4px;
+    display: block;
+    width: fit-content;
+    margin: 10px auto 0 auto;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+/* Sidebar Menu Wrapper */
+.sidebar-menu {
+    flex-grow: 1; 
+    display: flex;
+    flex-direction: column;
+    gap: 8px; /* Slightly reduced gap */
+    margin-bottom: 24px;
+    list-style: none;
+}
+
+/* Sidebar Item/Link */
+.sidebar-item {
+    padding: 12px 14px; /* Slightly increased vertical padding */
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 15px;
+    transition: 0.2s;
+    color: #c9c9d4; /* Light grey for unselected */
+    text-decoration: none; /* Ensure it looks like a link */
+    display: block;
+}
+
+.sidebar-item:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+}
+
+.sidebar-item.active {
+    background: var(--color-primary); 
+    color: white;
+    font-weight: 600;
+    /* Stronger visual cue for the active link */
+    border-left: 4px solid white; 
+    padding-left: 10px; 
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+/* Sidebar Footer */
+.sidebar-footer {
+    margin-top: auto; 
+    padding-top: 25px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
+}
+
+.sidebar-user {
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 10px;
+    color: #D1D5DB;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sidebar-logout {
+    width: 100%;
+    padding: 10px; /* Slightly larger button */
+    background: var(--color-danger); 
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-weight: 600;
+}
+
+.sidebar-logout:hover {
+    background: var(--color-danger-dark);
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| GENERAL COMPONENTS (Cards, Buttons, Inputs)
+|--------------------------------------------------------------------------
+*/
+
+/* --- Container for main content --- */
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* --- Card Styling --- */
+.card {
+    background-color: var(--color-bg-white);
+    padding: 25px;
+    margin-bottom: 25px; 
+    border-radius: 8px; 
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08); /* A bit more pronounced shadow */
+    border: 1px solid #e2e8f0; 
+}
+
+.card-header {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+/* --- Form & Input Styling --- */
+.form-flex {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.input-text {
+    padding: 10px 15px;
+    border: 1px solid var(--color-border-light); 
+    border-radius: 6px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    font-size: 15px;
+    color: var(--color-text-dark);
+    flex-grow: 1;
+}
+
+.input-text:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15); 
+    outline: none;
+}
+
+/* --- Button Styling --- */
+.btn-primary, .btn-secondary {
+    padding: 10px 18px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.2s, box-shadow 0.2s;
+    text-transform: capitalize;
+    white-space: nowrap; /* Prevent button text from wrapping */
+}
+
+.btn-primary {
+    background: var(--color-primary); 
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--color-primary-dark);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-secondary {
+    background: #e2e8f0;
+    color: #4a5568;
+}
+
+.btn-secondary:hover {
+    background: #cbd5e1;
+}
+
+.btn-disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none; /* Ensure no interaction when disabled */
+}
+
+/* Link Buttons (Edit/Delete in list) */
+.btn-link-edit, .btn-link-delete {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9em;
+    margin-left: 15px;
+    font-weight: 500;
+    padding: 0;
+    transition: color 0.2s;
+}
+
+.btn-link-edit {
+    color: var(--color-primary);
+}
+.btn-link-edit:hover {
+    color: var(--color-primary-dark);
+}
+
+.btn-link-delete {
+    color: var(--color-danger);
+}
+.btn-link-delete:hover {
+    color: var(--color-danger-dark);
+}
+
+/* --- List Styling (For Existing Categories) --- */
+.list-group {
+    list-style: none;
+    padding: 0;
+}
+
+.list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.list-item:last-child {
+    border-bottom: none;
+}
+
+.list-item-text {
+    font-size: 16px;
+    font-weight: 500;
+    color: #2d3748;
+}
+
+.list-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.list-empty {
+    padding: 20px;
+    text-align: center;
+    color: #a0aec0;
+    font-style: italic;
+}
+
+/* --- Alert/Error Styling --- */
+.alert-error {
+    padding: 15px;
+    margin-bottom: 20px;
+    background-color: #fef2f2; /* Light red background */
+    color: var(--color-danger-dark);
+    border: 1px solid #fca5a5;
+    border-radius: 6px;
+    font-weight: 500;
+}
+
+/* --- TABLE STYLING (Add to dashboard.css) --- */
+
+.table-container {
+    padding: 0; /* Remove card padding inside for full table width */
+}
+
+.table-responsive {
+    overflow-x: auto; /* Handles horizontal scrolling for tables on small screens */
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 600px; /* Ensure table isn't too squished */
+}
+
+.table-header {
+    background-color: #f7f9fc;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.table-th {
+    padding: 12px 24px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280; /* Muted gray text */
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.table-th-center {
+    text-align: center;
+}
+
+.table-body .table-row:hover {
+    background-color: #fcfcfc;
+}
+
+.table-td {
+    padding: 12px 24px;
+    font-size: 14px;
+    color: #374151;
+    border-bottom: 1px solid #f3f4f6;
+    white-space: nowrap;
+}
+
+.table-td-center {
+    text-align: center;
+}
+
+.table-text-bold {
+    font-weight: 500;
+    color: #1f2937;
+}
+
+.table-text-primary {
+    color: var(--color-primary);
+}
+
+.table-text-secondary {
+    color: #6b7280;
+}
+
+.table-empty-message {
+    text-align: center;
+    padding: 40px;
+    color: #9ca3af;
+    font-style: italic;
+    font-size: 15px;
+}
+
+/* --- BADGE STYLING (Add to dashboard.css) --- */
+.status-badge {
+    display: inline-flex;
+    padding: 4px 8px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.2;
+    border-radius: 9999px; /* Fully rounded */
+}
+
+.status-success {
+    background-color: #d1fae5; /* Green 100 */
+    color: #065f46; /* Green 800 */
+}
+
+.status-pending {
+    background-color: #a18a2e; /* Yellow 100 */
+    color: #92400e; /* Yellow 800 */
+}
+
+/* --- SMALL BUTTONS --- */
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 13px;
 }

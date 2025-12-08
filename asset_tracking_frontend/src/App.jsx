@@ -8,8 +8,10 @@ import Login from './pages/Login.jsx';
 import AdminDashboard from './pages/AdminDashboard.jsx';
 import EmployeeDashboard from './pages/EmployeeDashboard.jsx'; 
 import AdminAssets from './pages/AdminAssets.jsx'; 
-import AdminUsers from './pages/AdminUsers.jsx';
+import AdminUsers from './pages/AdminEmployees.jsx';
 import EmployeeAssets from './pages/EmployeeAssets.jsx';
+import AdminAssignments from './pages/AdminAssignments.jsx';
+import AdminCategories from './pages/AdminCategories.jsx';
 
 // --- Protected Route ---
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -69,7 +71,9 @@ const MainRouter = () => {
         case '/login': return <Login />;
         case '/admin': return <ProtectedRoute allowedRoles={[ROLE_ADMIN]}><AdminDashboard /></ProtectedRoute>;
         case '/admin/assets': return <ProtectedRoute allowedRoles={[ROLE_ADMIN]}><AdminAssets /></ProtectedRoute>;
-        case '/admin/users': return <ProtectedRoute allowedRoles={[ROLE_ADMIN]}><AdminUsers /></ProtectedRoute>;
+        case '/admin/employees': return <ProtectedRoute allowedRoles={[ROLE_ADMIN]}><AdminUsers /></ProtectedRoute>;
+        case '/admin/categories': return <ProtectedRoute allowedRoles={[ROLE_ADMIN]}><AdminCategories /></ProtectedRoute>;
+        case '/admin/assignments': return <ProtectedRoute allowedRoles={[ROLE_ADMIN]}><AdminAssignments /></ProtectedRoute>;
         case '/employee': return <ProtectedRoute allowedRoles={[ROLE_EMPLOYEE]}><EmployeeDashboard /></ProtectedRoute>;
         case '/employee/assets': return <ProtectedRoute allowedRoles={[ROLE_EMPLOYEE]}><EmployeeAssets /></ProtectedRoute>;
         default: return <NotFound />;

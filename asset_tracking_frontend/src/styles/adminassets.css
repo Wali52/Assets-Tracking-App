@@ -34,3 +34,39 @@
 .status-blue { background: #dbe6ff; color: #0b3fe0; }
 .status-yellow { background: #fff4c2; color: #7a6400; }
 .status-gray { background: #e6e6e6; color: #444; }
+
+.status-badge {
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 14px;
+    color: white;
+}
+
+.status-green { background-color: #16a34a; }
+.status-blue  { background-color: #2563eb; }
+.status-gray  { background-color: #6b7280; }
+
+.btn-request {
+    padding: 6px 12px;
+    background-color: #2563eb;
+    color: white;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-edit {
+    padding: 6px 12px;
+    background-color: #10b981;
+    color: white;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+}
+
+.page-title {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 20px;
+}

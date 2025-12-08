@@ -90,6 +90,7 @@ class OrganizationTokenObtainPairSerializer(TokenObtainPairSerializer):
             "first_name": self.user.first_name,
             "last_name": self.user.last_name,
             "role": self.user.role,
+            "organization": self.user.organization_id if self.user.organization_id else None,
         }
 
         return data

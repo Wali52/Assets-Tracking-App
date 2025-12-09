@@ -33,7 +33,7 @@ const useApiAction = () => {
                     response = await apiClient.post(url, body);
                     break;
                 case 'PATCH':
-                case 'PUT': // Including PUT for completeness, though PATCH is common for updates
+                case 'PUT':
                     response = await apiClient.patch(url, body);
                     break;
                 case 'DELETE':
@@ -49,14 +49,28 @@ const useApiAction = () => {
         } catch (err) {
             console.error(`API Action Error on ${method} ${url}:`, err);
             
-            // Detailed error handling, similar to useApiData
-            if (err.response?.status === 403) {
-                setError("Permission denied for this action.");
-            } else if (err.response?.status === 401) {
+            const status = err.response?.status;
+            const responseData = err.response?.data;
+
+            if (status === 401) {
                 setError("Authentication required to perform this action.");
-            } else if (err.response?.data?.detail) {
-                // Use specific error message from API response if available
-                 setError(err.response.data.detail);
+            } else if (status === 403) {
+                setError("Permission denied for this action.");
+            } else if (status === 400 && responseData && typeof responseData === 'object') {
+                // FIX: Handle validation errors (400) which return an object of field errors
+                const errorMessages = Object.keys(responseData)
+                    .map(key => {
+                        // Takes the first error message for each field
+                        const messages = Array.isArray(responseData[key]) ? responseData[key].join(', ') : responseData[key];
+                        // Capitalize key for better display (e.g., "Password: ...")
+                        return `${key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ')}: ${messages}`;
+                    })
+                    .join('\n'); // Join messages with a newline character
+
+                setError(errorMessages);
+            } else if (responseData?.detail) {
+                // Fallback for generic 'detail' messages (e.g., object not found)
+                setError(responseData.detail);
             } else {
                 setError("Failed to complete action. Check console for details.");
             }

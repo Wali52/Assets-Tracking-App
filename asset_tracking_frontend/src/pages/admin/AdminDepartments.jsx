@@ -1,65 +1,62 @@
 import React, { useState, useEffect } from "react";
-import DashboardLayout, { LoadingSpinner } from "../layouts/DashboardLayout.jsx";
-import { useApiData } from "../hooks/useApiData.js";
-import useApiAction from "../hooks/useApiAction.js";
-import { useAuth } from "../context/AuthContext.jsx"; 
+// Adjust paths as necessary based on your final file structure
+import DashboardLayout, { LoadingSpinner } from "../../layouts/DashboardLayout.jsx"; 
+import { useApiData } from "../../hooks/useApiData.js";
+import useApiAction from "../../hooks/useApiAction.js";
+import { useAuth } from "../../context/AuthContext.jsx"; 
 
-const AdminCategories = () => {
+const AdminDepartments = () => {
     // 🔑 Retrieve organization ID from the authenticated user
     const { currentUser } = useAuth();
     
     // 👇 TEMPORARY: Log the user object to see the organization ID property name
-    // REMOVE THIS useEffect hook once the feature is working to clean up the console.
+    // This hook logs the user object once on component mount for debugging.
     useEffect(() => {
-        // Find this log in your browser console (F12 -> Console tab)
         console.log("DEBUG: Current User Object Structure:", currentUser); 
     }, [currentUser]); 
     // 👆 END TEMPORARY LOG
 
-    // ✅ FIX 1: Set organizationId to correctly read the 'organization' key from the user object.
+    // Get the organization ID (which is needed for POST/PATCH payloads)
     const organizationId = currentUser?.organization; 
 
-    // 1. Data Fetching (READ)
+    // 1. Data Fetching (READ) - Fetches all departments for the organization
     const { 
-        data: categories, 
-        loading: loadingCategories, 
+        data: departments, 
+        loading: loadingDepartments, 
         error: fetchError, 
-        refetch: fetchCategories 
-    } = useApiData("/asset-categories/", [], []); 
+        refetch: fetchDepartments 
+    } = useApiData("/departments/", [], []); // ✅ Department Endpoint
 
     // 2. Action Hook for POST/PATCH/DELETE
     const { loading: submitting, error: submitError, execute } = useApiAction();
 
     // 3. Component State
     const [name, setName] = useState("");
-    const [editing, setEditing] = useState(null);
+    const [editing, setEditing] = useState(null); // Will hold the department object if editing
 
     // --- Handlers for CRUD Operations ---
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         
-        // This guard clause should now pass if the organization ID is present.
         if (!name.trim() || !organizationId) {
-             console.error("Missing Category Name or Organization ID. Current Org ID:", organizationId);
+             console.error("Missing Department Name or Organization ID. Current Org ID:", organizationId);
              return;
         }
 
-        let url = "/asset-categories/"; 
+        let url = "/departments/"; // ✅ POST URL
         let method = "POST";
-        let successMessage = "Category added successfully!";
+        let successMessage = "Department added successfully!";
 
-        // ✅ FIX 2: Organization ID is passed as a string (e.g., ORG-6547BD).
         const payload = { 
             name: name,
-            // Pass the organization ID as a string
-            organization: organizationId, 
+            organization: organizationId, // ✅ Required organization ID
         };
 
         if (editing) {
-            url = `/asset-categories/${editing.id}/`; 
+            url = `/departments/${editing.id}/`; // ✅ PATCH URL
             method = "PATCH";
-            successMessage = "Category updated successfully!";
+            successMessage = "Department updated successfully!";
         }
 
         const result = await execute(url, method, payload);
@@ -68,39 +65,40 @@ const AdminCategories = () => {
             console.log(successMessage);
             setName("");
             setEditing(null);
-            fetchCategories(); 
+            fetchDepartments(); // Refreshes the list
         }
     };
 
-    const handleDelete = async (categoryId) => {
-        if (!window.confirm("Are you sure you want to delete this category?")) return;
+    const handleDelete = async (departmentId) => {
+        // We use window.confirm as in the Categories file
+        if (!window.confirm("Are you sure you want to delete this department?")) return;
 
-        const result = await execute(`/asset-categories/${categoryId}/`, "DELETE"); 
+        const result = await execute(`/departments/${departmentId}/`, "DELETE"); // ✅ DELETE URL
 
         if (result) {
-            console.log("Category deleted successfully!");
-            fetchCategories(); 
+            console.log("Department deleted successfully!");
+            fetchDepartments(); // Refreshes the list
         }
     };
 
-    const handleEditSetup = (category) => {
-        setEditing(category);
-        setName(category.name);
+    const handleEditSetup = (department) => { 
+        setEditing(department);
+        setName(department.name);
     };
 
     // --- Loading and Error Display ---
 
-    if (loadingCategories) {
+    if (loadingDepartments) { 
         return <DashboardLayout><div className="loading-container"><LoadingSpinner size="spinner-lg" /></div></DashboardLayout>;
     }
 
     const currentError = fetchError || submitError;
 
-    // --- Component JSX (using plain CSS classes) ---
+    // --- Component JSX ---
     return (
         <DashboardLayout>
             <div className="container">
-                <h1 className="header-primary">Category Management</h1>
+                <h1 className="header-primary">Department Management</h1>
                 
                 {/* Error Banner */}
                 {currentError && (
@@ -112,12 +110,12 @@ const AdminCategories = () => {
                 {/* 1. Add/Edit Form */}
                 <div className="card">
                     <h3 className="card-header">
-                        {editing ? `Edit Category: ${editing.name}` : "Add New Category"}
+                        {editing ? `Edit Department: ${editing.name}` : "Add New Department"}
                     </h3>
                     <form onSubmit={handleSubmit} className="form-flex">
                         <input
                             type="text"
-                            placeholder="Category name (e.g., Laptops, Furniture)"
+                            placeholder="Department name (e.g., Sales, HR, IT)"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             className="input-text"
@@ -135,7 +133,7 @@ const AdminCategories = () => {
                                     {editing ? "Updating..." : "Adding..."}
                                 </>
                             ) : (
-                                editing ? "Update Category" : "Add Category"
+                                editing ? "Update Department" : "Add Department"
                             )}
                         </button>
                         {editing && (
@@ -151,23 +149,23 @@ const AdminCategories = () => {
                     </form>
                 </div>
 
-                {/* 2. Category List */}
+                {/* 2. Department List */}
                 <div className="card">
-                    <h3 className="card-header">Existing Categories</h3>
+                    <h3 className="card-header">Existing Departments</h3>
                     <ul className="list-group">
-                        {categories.map((c) => (
-                            <li key={c.id} className="list-item">
-                                <span className="list-item-text">{c.name}</span>
+                        {departments.map((d) => (
+                            <li key={d.id} className="list-item">
+                                <span className="list-item-text">{d.name}</span>
                                 <div className="list-actions">
                                     <button 
-                                        onClick={() => handleEditSetup(c)}
+                                        onClick={() => handleEditSetup(d)} 
                                         className="btn-link-edit"
                                         disabled={submitting}
                                     >
                                         Edit
                                     </button>
                                     <button
-                                        onClick={() => handleDelete(c.id)}
+                                        onClick={() => handleDelete(d.id)} 
                                         className="btn-link-delete"
                                         disabled={submitting}
                                     >
@@ -177,8 +175,8 @@ const AdminCategories = () => {
                             </li>
                         ))}
                     </ul>
-                    {categories.length === 0 && !loadingCategories && (
-                        <p className="list-empty">No categories defined yet.</p>
+                    {departments.length === 0 && !loadingDepartments && (
+                        <p className="list-empty">No departments defined yet.</p>
                     )}
                 </div>
             </div>
@@ -186,4 +184,4 @@ const AdminCategories = () => {
     );
 }
 
-export default AdminCategories;
+export default AdminDepartments;

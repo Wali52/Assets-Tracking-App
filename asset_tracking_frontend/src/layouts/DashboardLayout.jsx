@@ -38,6 +38,7 @@ const Sidebar = () => {
   { name: "Assignments", path: "/admin/assignments" },
   { name: "Employees", path: "/admin/employees" },
   { name: "Categories", path: "/admin/categories" },
+  { name: "Departments", path: "/admin/departments" },
 ];
 
 

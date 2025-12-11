@@ -1,26 +1,28 @@
 /* AdminAssets.jsx */
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import DashboardLayout from "../../layouts/DashboardLayout.jsx";
 import DataTable from "../../components/DataTable.jsx";
 import { useApiData } from "../../hooks/useApiData.js";
-import useApiAction from "../../hooks/useApiAction.js"; // 👈 Import for DELETE
+import useApiAction from "../../hooks/useApiAction.js"; 
 import AddEditAssetModal from "./components/AddEditAssetModal.jsx";
-import "../../styles/adminassets.css"; // Go up two levels (out of 'admin', out of 'pages')
+import "../../styles/adminassets.css"; 
+
 const AdminAssets = () => {
     // --- State for Data and Modals ---
     
     // 1. Modal State for Add/Edit
     const [isAddEditModalOpen, setIsAddEditModalOpen] = useState(false);
-    const [selectedAsset, setSelectedAsset] = useState(null); // Stores asset for editing, null for adding
+    const [selectedAsset, setSelectedAsset] = useState(null); 
 
     // 2. Modal State for Delete Confirmation
-    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false); // 👈 NEW: Delete Modal State
-    const [assetToDelete, setAssetToDelete] = useState(null); // 👈 NEW: Stores data for the asset to delete
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false); 
+    const [assetToDelete, setAssetToDelete] = useState(null); 
 
     // 3. Data Fetching
-// Correct code: Rename the error variable to match the name used in renderDeleteModal
-const { data: assets, loading, error: fetchError, refetch } = useApiData("assets/");
-    // 4. API Action Hook for Deleting
+    // 🛑 RESTORED: Fetching ASSETS data from the backend
+    const { data: assets, loading, error: fetchError, refetch } = useApiData("assets/"); 
+    
+    // 4. API Action Hook for Deleting (Only action required here)
     const { 
         loading: deleting, 
         error: deleteError, 
@@ -40,13 +42,12 @@ const { data: assets, loading, error: fetchError, refetch } = useApiData("assets
         setIsAddEditModalOpen(true);
     };
 
-    // 💡 NEW: Handler to initiate the delete process (open confirmation modal)
     const handleDeleteClick = (asset) => {
         setAssetToDelete(asset);
         setIsDeleteModalOpen(true);
     };
     
-    // 💡 NEW: Handler to execute the delete API call
+    // Handler to execute the delete API call
     const executeDelete = async () => {
         if (!assetToDelete) return;
 
@@ -59,7 +60,6 @@ const { data: assets, loading, error: fetchError, refetch } = useApiData("assets
             handleSuccess();
         }
     };
-
 
     const handleSuccess = () => {
         refetch(); // Refetch the asset list to update the table data
@@ -92,6 +92,8 @@ const { data: assets, loading, error: fetchError, refetch } = useApiData("assets
                         ? "status-blue"
                         : row.status === "In Repair"
                         ? "status-yellow"
+                        : row.status === "Requested Return" // This status is for display only
+                        ? "status-orange"
                         : "status-gray";
 
                 return <span className={`status-badge ${color}`}>{row.status}</span>;
@@ -102,24 +104,24 @@ const { data: assets, loading, error: fetchError, refetch } = useApiData("assets
         {
             header: "Actions",
             cell: (row) => (
-                <div className="flex-row button-group"> {/* Use a flex container for buttons */}
+                <div className="flex-row button-group"> 
                     <button
                         onClick={() => handleEditAsset(row)}
                         className="btn-edit"
                     >
                         Edit
                     </button>
-                    {/* 💡 NEW: Delete Button */}
+                    {/* Only Edit and Delete buttons here */}
                     <button
                         onClick={() => handleDeleteClick(row)}
-                        className="btn-danger" // Assuming you have a style for btn-danger (red)
+                        className="btn-danger" 
                     >
                         Delete
                     </button>
                 </div>
             ),
         },
-    ], []);
+    ], [handleEditAsset, handleDeleteClick]);
 
 
     const actions = (
@@ -184,7 +186,7 @@ const { data: assets, loading, error: fetchError, refetch } = useApiData("assets
                 data={assets}
                 columns={assetColumns}
                 loading={loading}
-                error={fetchError}
+                error={fetchError || deleteError}
                 actions={actions}
             />
 
@@ -198,43 +200,8 @@ const { data: assets, loading, error: fetchError, refetch } = useApiData("assets
             )}
             
             {/* Render Delete Confirmation Modal */}
-            {isDeleteModalOpen && assetToDelete && (
-                <div className="modal-backdrop">
-                    <div className="modal-content modal-small">
-                        <h2 className="modal-title delete-title">Confirm Deletion</h2>
-                        
-                        {/* Note: fetchError is checked here implicitly via errorToDisplay */}
-                        {(deleteError || fetchError) && (
-                            <div className="error-message">Error: {(deleteError || fetchError).message || "Failed to delete asset."}</div>
-                        )}
-
-                        <p className="modal-body-text">
-                            Are you sure you want to permanently delete **{assetToDelete.asset_tag}**?
-                            This action cannot be undone.
-                        </p>
-
-                        <div className="button-group justify-end">
-                            <button
-                                type="button"
-                                onClick={handleClose}
-                                disabled={deleting}
-                                className="button-secondary"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="button"
-                                onClick={executeDelete}
-                                disabled={deleting}
-                                className={`btn-danger ${deleting ? 'btn-submitting' : ''}`}
-                            >
-                                {deleting ? 'Deleting...' : "Delete"}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-                    
+            {isDeleteModalOpen && assetToDelete && renderDeleteModal()}
+                
         </DashboardLayout>
     );
 };

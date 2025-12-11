@@ -23,6 +23,8 @@ from api.authentication_views import OrganizationTokenObtainPairView
 from api.views import OrganizationMetricsView
 from api.authentication_views import ChangePasswordView
 from django.urls import path
+from django.conf import settings
+from django.conf.urls.static import static
 
 
 
@@ -52,4 +54,4 @@ urlpatterns = [
         SpectacularSwaggerView.as_view(url_name='schema'), 
         name='swagger-ui'
     ),
-]
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

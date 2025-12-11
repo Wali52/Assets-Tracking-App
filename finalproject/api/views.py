@@ -469,6 +469,10 @@ from django.db.models import Count
 from multi_tenant_mixin import MultiTenantMixin 
 from api.permissions import UserAccessPermission, OrgAccessPermission, AssignmentPermission 
 
+from rest_framework.parsers import MultiPartParser, FormParser
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+
 # Import all Models and Serializers from their respective apps
 from organizations.models import Organization
 from organizations.serializers import OrganizationSerializer
@@ -632,12 +636,24 @@ class AssetViewSet(MultiTenantMixin, viewsets.ModelViewSet):
 
 # 7. Assignment ViewSet (Multi-Role)
 class AssignmentViewSet(viewsets.ModelViewSet):
-    # ... (No change needed here) ...
     serializer_class = AssignmentSerializer
     queryset = Assignment.objects.all().order_by('-assigned_date')
     permission_classes = [AssignmentPermission] 
 
+
+    def get_permissions(self):
+        if self.action == 'upload-fine-proof':
+            # Only authenticated employees can upload their own fine proof
+            return [IsAuthenticated()]
+        elif self.action in ['approve-fine-payment', 'deny-fine-payment']:
+            # Only Admins (with org access) can approve/deny fine payments
+            return [IsAuthenticated(), OrgAccessPermission()]
+        # Default permission for other actions
+        return [permission() for permission in self.permission_classes]
+    
+    
     def get_queryset(self):
+        # ... (Your existing get_queryset logic) ...
         user = self.request.user
 
         if user.is_superuser:
@@ -654,7 +670,7 @@ class AssignmentViewSet(viewsets.ModelViewSet):
         return self.queryset.none()
 
     def perform_create(self, serializer):
-        """Assign asset and link to organization/admin."""
+        # ... (Your existing perform_create logic) ...
         if self.request.user.is_authenticated:
             assignment = serializer.save(
                 assigned_by_user=self.request.user,
@@ -664,10 +680,10 @@ class AssignmentViewSet(viewsets.ModelViewSet):
             assignment.save()
         else:
             super().perform_create(serializer)
-
+            
     @action(detail=True, methods=['post'], url_path='return-asset')
     def return_asset(self, request, pk=None):
-        # ... (Existing logic for return_asset remains correct) ...
+        # ... (Your existing return_asset logic) ...
         try:
             assignment = self.get_object() 
         except Assignment.DoesNotExist:
@@ -686,7 +702,8 @@ class AssignmentViewSet(viewsets.ModelViewSet):
             fine_per_day = Decimal("0.00")
             if days_late > 0:
                 try:
-                    org_settings = OrgSettings.objects.get(organization=assignment.organization)
+                    # Assuming OrgSettings is imported and defined
+                    org_settings = OrgSettings.objects.get(organization=assignment.organization) 
                     fine_per_day = org_settings.fine_per_day
                 except OrgSettings.DoesNotExist:
                     pass
@@ -704,6 +721,203 @@ class AssignmentViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(assignment)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    # 🛑 NEW ACTION: Handles Admin approval of an employee's return request
+    @action(detail=True, methods=['post'])
+    def approve_return(self, request, pk=None):
+        # ... (Your existing approve_return logic) ...
+        try:
+            assignment = self.get_object() 
+        except Assignment.DoesNotExist:
+            return Response({"detail": "Assignment not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Validation check: Must be in 'Requested Return' state
+        if assignment.status != 'Requested Return':
+            return Response(
+                {"detail": f"Cannot approve return. Current status is '{assignment.status}'."}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # --- Start Transaction for Atomicity ---
+        with transaction.atomic():
+            # 1. Update Assignment Status
+            assignment.status = 'Returned'
+            assignment.returned_date = timezone.now().date()
+
+            # 2. Fine calculation (Copying your existing logic)
+            fine_amount = Decimal("0.00")
+            # Determine fine amount
+            if assignment.due_date and assignment.returned_date > assignment.due_date:
+                days_late = (assignment.returned_date - assignment.due_date).days
+                fine_per_day = Decimal("0.00")
+                if days_late > 0:
+                    try:
+                        org_settings = OrgSettings.objects.get(organization=assignment.organization)
+                        fine_per_day = org_settings.fine_per_day
+                    except OrgSettings.DoesNotExist:
+                        pass
+                    
+                    if fine_per_day and fine_per_day > Decimal("0.00"):
+                        fine_amount = Decimal(days_late) * fine_per_day
+            
+            assignment.fine_amount = fine_amount
+            # Initialize fine payment status if fine exists
+            if assignment.fine_amount > Decimal("0.00"):
+                 assignment.fine_paid_status = "Pending Proof" # Set for employee action
+            else:
+                 assignment.fine_paid_status = "Paid/Approved" # Mark fine process complete if no fine
+                 
+            assignment.save()
+
+            # 3. Update Asset Status
+            asset = assignment.asset
+            asset.status = 'Available'
+            asset.save()
+
+        serializer = self.get_serializer(assignment)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    # 🛑 NEW ACTION: Handles Admin denial of an employee's return request
+    @action(detail=True, methods=['post'])
+    def deny_return(self, request, pk=None):
+        # ... (Your existing deny_return logic) ...
+        try:
+            assignment = self.get_object() 
+        except Assignment.DoesNotExist:
+            return Response({"detail": "Assignment not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        if assignment.status != 'Requested Return':
+            return Response(
+                {"detail": f"Cannot deny return. Current status is '{assignment.status}'."}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Set the status back to Active. Do NOT change returned_date or asset status.
+        assignment.status = 'Active' 
+        assignment.save()
+
+        serializer = self.get_serializer(assignment)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+        
+    # ====================================================================
+    # 🌟 NEW FINE PAYMENT APPROVAL ACTIONS
+    # ====================================================================
+
+    # 1. Employee action to submit proof
+    @action(detail=True, methods=['post'], url_path='upload-fine-proof')
+    def upload_fine_proof(self, request, pk=None):
+        """Allows employee to upload a proof of fine payment."""
+        try:
+            assignment = self.get_object() 
+        except Assignment.DoesNotExist:
+            return Response({"detail": "Assignment not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Validation checks
+        if assignment.fine_amount is None or assignment.fine_amount <= Decimal("0.00"):
+            return Response({"detail": "No outstanding fine exists for this assignment."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if assignment.fine_paid_status in ['Paid/Approved', 'Proof Submitted']:
+            return Response({"detail": f"Fine payment is already '{assignment.fine_paid_status}'."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Assuming the URL/file path is sent in the request data (e.g., after successful file upload to S3/media storage)
+        fine_proof_url = request.data.get('fine_proof_url')
+        if not fine_proof_url:
+            return Response({"detail": "Missing 'fine_proof_url' in request data."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Update assignment fields
+        assignment.fine_proof_url = fine_proof_url
+        assignment.fine_paid_status = "Proof Submitted"
+        assignment.save()
+        
+        serializer = self.get_serializer(assignment)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+    # 2. Admin action to approve the fine payment
+    @action(detail=True, methods=['post'], url_path='approve-fine-payment')
+    def approve_fine_payment(self, request, pk=None):
+        """Allows Admin to approve a fine payment when proof has been submitted."""
+        try:
+            assignment = self.get_object() 
+        except Assignment.DoesNotExist:
+            return Response({"detail": "Assignment not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Validation checks
+        if assignment.fine_amount is None or assignment.fine_amount <= Decimal("0.00"):
+            return Response({"detail": "No outstanding fine exists for this assignment."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        if assignment.fine_paid_status == 'Paid/Approved':
+            return Response({"detail": "Fine is already marked as Paid/Approved."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        if assignment.fine_paid_status != 'Proof Submitted':
+            return Response({"detail": "Fine payment proof must be 'Submitted' before approval."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Finalize payment status
+        assignment.fine_paid_status = "Paid/Approved"
+        assignment.save()
+        
+        serializer = self.get_serializer(assignment)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+    # 3. Admin action to deny the fine payment
+    @action(detail=True, methods=['post'], url_path='deny-fine-payment')
+    def deny_fine_payment(self, request, pk=None):
+        """Allows Admin to deny a fine payment proof, reverting status to 'Pending Proof'."""
+        try:
+            assignment = self.get_object() 
+        except Assignment.DoesNotExist:
+            return Response({"detail": "Assignment not found."}, status=status.HTTP_404_NOT_FOUND)
+            
+        # Validation checks
+        if assignment.fine_paid_status != 'Proof Submitted':
+            return Response({"detail": "Only 'Submitted' proofs can be denied."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Revert status
+        assignment.fine_paid_status = "Pending Proof"
+        assignment.save()
+        
+        serializer = self.get_serializer(assignment)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    @action(detail=True, methods=['post'], url_path='upload-fine-proof')
+    def upload_fine_proof(self, request, pk=None):
+        """Allows employee to upload a proof of fine payment."""
+        try:
+            assignment = self.get_object() 
+        except Assignment.DoesNotExist:
+            return Response({"detail": "Assignment not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Ensure the user is the assigned employee
+        if assignment.employee != request.user:
+            return Response({"detail": "You are not assigned to this asset."}, status=status.HTTP_403_FORBIDDEN)
+
+        # Validation checks
+        if assignment.fine_amount is None or assignment.fine_amount <= Decimal("0.00"):
+            return Response({"detail": "No outstanding fine exists for this assignment."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if assignment.fine_paid_status in ['Paid/Approved', 'Proof Submitted']:
+            return Response({"detail": f"Fine payment is already '{assignment.fine_paid_status}'."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # ✅ Accept the file directly
+        file = request.FILES.get("proof_file")
+        if not file:
+            return Response({"detail": "No file provided."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Save file to media/fine_proofs/
+        file_path = default_storage.save(f"fine_proofs/{file.name}", ContentFile(file.read()))
+        file_url = request.build_absolute_uri(default_storage.url(file_path))
+
+        # Update assignment
+        assignment.fine_proof_url = file_url
+        assignment.fine_paid_status = "Proof Submitted"
+        assignment.save()
+
+        serializer = self.get_serializer(assignment)
+        return Response({"fine_proof_url": assignment.fine_proof_url,"fine_paid_status": assignment.fine_paid_status},
+        status=status.HTTP_200_OK) 
+
+    
+    
 # 8. Assignment History ViewSet (Read Only - Multi-Role Access)
 class AssignmentHistoryViewSet(MultiTenantMixin, viewsets.ReadOnlyModelViewSet):
     """
@@ -805,3 +1019,23 @@ class ChangePasswordView(APIView):
         user.save()
 
         return Response({"detail": "Password changed successfully."}, status=status.HTTP_200_OK)
+    
+from django.utils.text import get_valid_filename
+class UploadFileView(APIView):
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request):
+        file = request.FILES.get("file")
+        if not file:
+            return Response({"detail": "No file provided."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Make filename safe
+        safe_filename = get_valid_filename(file.name)
+
+        # Save file to media/fine_proofs/
+        file_path = default_storage.save(f"fine_proofs/{safe_filename}", file)
+
+        # Generate absolute URL
+        file_url = request.build_absolute_uri(default_storage.url(file_path))
+
+        return Response({"url": file_url}, status=status.HTTP_200_OK)

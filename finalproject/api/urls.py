@@ -12,7 +12,7 @@ from .views import (
     AssignmentViewSet,
     AssignmentHistoryViewSet,
     InitialSetupView,
-    
+    UploadFileView ,
 )
 
 # Initialize the primary API router for all authenticated endpoints
@@ -36,6 +36,6 @@ urlpatterns = [
 
     # 2. Authenticated API endpoints (all resources managed by the router)
     path('', include(router.urls)),
-    
+    path('upload/', UploadFileView.as_view(), name='upload-file'),
     
 ]

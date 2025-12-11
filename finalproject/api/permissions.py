@@ -79,48 +79,65 @@ class OrgAccessPermission(permissions.BasePermission):
 # --- REFINED: Specific Assignment Permission ---
 class AssignmentPermission(permissions.BasePermission):
     """
-    Specific permission for the Assignment model.
-    - Super Admin / Admin: Full access to manage (create, set due date, fine, return).
-    - Employee: Can only READ their OWN assignments. No write access (create/update/delete/return).
+    Permissions for Assignment model:
+    - Admins: Full access within their organization.
+    - Employees: Can read their assignments, PATCH 'status' for return requests, and upload fine proof.
     """
     def has_permission(self, request, view):
         user = request.user
         if not user.is_authenticated:
             return False
-            
-        # Admins have full access to Assignment actions
+
+        # Admins have full access
         if user.is_superuser or user.role == ROLE_ADMIN:
             return True
-            
-        # Employees are restricted
+
+        # Employees
         if user.role == ROLE_EMPLOYEE:
-            # Employees can only access 'list' and 'retrieve' (Read-only)
-            return view.action in ['list', 'retrieve'] 
-            
+            if view.action in ['list', 'retrieve']:
+                return True
+
+            # Allow PATCH (partial_update) for 'Request Return'
+            if view.action == 'partial_update' and request.method == 'PATCH':
+                return True
+
+            # ✅ ALLOW employees to POST fine proof
+            if view.action == 'upload_fine_proof' and request.method == 'POST':
+                return True
+
         return False
 
     def has_object_permission(self, request, view, obj):
         user = request.user
-        
-        # Super Admin bypass
+
+        # Superuser bypass
         if user.is_superuser:
             return True
 
-        # Org Admin can manage any assignment in their organization
+        # Admin can manage any assignment in their org
         if user.role == ROLE_ADMIN:
             return obj.organization_id == user.organization_id
-            
-        # Employee can only interact with assignments where they are the assigned employee
+
+        # Employee can only interact with their own assignments
         if user.role == ROLE_EMPLOYEE:
             is_their_assignment = obj.employee == user
-            
-            # Allow SAFE_METHODS (GET, HEAD, OPTIONS) only if it's their assignment
-            if request.method in permissions.SAFE_METHODS:
-                return is_their_assignment
-            
+
+            # Allow SAFE_METHODS if it's their assignment
+            if request.method in permissions.SAFE_METHODS and is_their_assignment:
+                return True
+
+            # PATCH for 'Request Return'
+            if request.method == 'PATCH' and view.action == 'partial_update' and is_their_assignment:
+                if list(request.data.keys()) == ['status']:
+                    is_currently_active = obj.status in ['Active', 'Overdue']
+                    is_requesting_return = request.data.get('status') == 'Requested Return'
+                    return is_currently_active and is_requesting_return
+
+            # ✅ POST for 'upload_fine_proof'
+            if request.method == 'POST' and view.action == 'upload_fine_proof' and is_their_assignment:
+                return True
+
         return False
-    
-    
 # new ----
 
 class MustChangePasswordPermission(BasePermission):

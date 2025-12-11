@@ -210,3 +210,12 @@ SPECTACULAR_SETTINGS = {
         }
     ],
 }
+
+
+import os
+
+# Media files
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # This ensures it's a string
+MEDIA_URL = '/media/'
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10485760  # 10 MB, adjust as needed
+

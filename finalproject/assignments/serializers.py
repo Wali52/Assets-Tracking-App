@@ -10,9 +10,10 @@ from django.core.exceptions import ValidationError
 class AssignmentSerializer(serializers.ModelSerializer):
     asset_tag = serializers.CharField(source='asset.asset_tag', read_only=True)
     asset_name = serializers.CharField(source='asset.name', read_only=True)
-    employee_name = serializers.CharField(source='employee.get_full_name', read_only=True)
-    assigned_by_name = serializers.CharField(source='assigned_by_user.get_full_name', read_only=True)
-
+    # employee_name = serializers.CharField(source='employee.get_full_name', read_only=True)
+    # assigned_by_name = serializers.CharField(source='assigned_by_user.get_full_name', read_only=True)
+    employee_name = serializers.CharField(source="employee.first_name", read_only=True)
+    assigned_by_name = serializers.CharField(source="assigned_by_user.first_name", read_only=True)
     live_fine = serializers.DecimalField(
         max_digits=10,
         decimal_places=2,
@@ -38,6 +39,8 @@ class AssignmentSerializer(serializers.ModelSerializer):
             'fine_amount',
             'live_fine',
             'organization',
+            'fine_paid_status',   
+            'fine_proof_url', 
         ]
         read_only_fields = [
             'id',

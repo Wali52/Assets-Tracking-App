@@ -5,15 +5,16 @@ import { RouterProvider, useRouter } from './context/RouterContext.jsx';
 
 // --- Page Imports ---
 import Login from './pages/Login.jsx'; 
-import AdminDashboard from './pages/admin/AdminDashboard.jsx'; // Admin Dashboard page
-import EmployeeDashboard from './pages/EmployeeDashboard.jsx'; // Employee Dashboard page
-import AdminAssets from './pages/admin/AdminAssets.jsx';       // Moved to admin folder
-import AdminEmployees from './pages/admin/AdminEmployees.jsx'; // ✅ CORRECTED: Using the actual file name AdminEmployees.jsx
-import EmployeeAssets from './pages/EmployeeAssets.jsx';       // Employee Assets page
-import AdminAssignments from './pages/admin/AdminAssignments.jsx'; // Moved to admin folder
-import AdminCategories from './pages/admin/AdminCategories.jsx';   // Moved to admin folder
-import AdminDepartments from './pages/admin/AdminDepartments.jsx'; // Department Management Page
+import AdminDashboard from './pages/admin/AdminDashboard.jsx'; 
+import AdminAssets from './pages/admin/AdminAssets.jsx';       
+import AdminEmployees from './pages/admin/AdminEmployees.jsx'; 
+import AdminAssignments from './pages/admin/AdminAssignments.jsx'; 
+import AdminCategories from './pages/admin/AdminCategories.jsx';   
+import AdminDepartments from './pages/admin/AdminDepartments.jsx'; 
+import AdminFines from './pages/admin/AdminFines.jsx';
 
+import EmployeeAssets from './pages/employee/EmployeeAssets.jsx';       
+import EmployeeDashboard from './pages/employee/EmployeeDashboard.jsx'; 
 // --- Protected Route ---
 const ProtectedRoute = ({ children, allowedRoles }) => {
     const { isAuthenticated, role, loading } = useAuth();
@@ -80,6 +81,8 @@ const MainRouter = () => {
         case '/employee': return <ProtectedRoute allowedRoles={[ROLE_EMPLOYEE]}><EmployeeDashboard /></ProtectedRoute>;
         case '/employee/assets': return <ProtectedRoute allowedRoles={[ROLE_EMPLOYEE]}><EmployeeAssets /></ProtectedRoute>;
         default: return <NotFound />;
+
+        case '/admin/fines': return <ProtectedRoute allowedRoles={[ROLE_ADMIN]}><AdminFines /></ProtectedRoute>; // 🆕
     }
 };
 

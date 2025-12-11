@@ -1,9 +1,5 @@
-# assets/serializers.py
-
 from rest_framework import serializers
 from .models import Asset
-# You may need to import Assignment if it's in a different app, but let's assume it's accessible.
-# from assignments.models import Assignment 
 
 class AssetSerializer(serializers.ModelSerializer):
     """
@@ -42,9 +38,7 @@ class AssetSerializer(serializers.ModelSerializer):
         Filters by assignments that are not yet 'Returned' or 'Cancelled'.
         """
         try:
-            # Assumes a reverse relationship is available (default related_name is 'assignment_set')
-            # You might need to adjust the filter based on your Assignment model's possible statuses.
-            # We are looking for the assignment with the status 'Active', 'Overdue', or 'Requested Return'.
+            
             active_assignment = obj.assignment_set.filter(
                 status__in=['Active', 'Overdue', 'Requested Return']
             ).latest('assigned_date') # Gets the most recent active assignment ID

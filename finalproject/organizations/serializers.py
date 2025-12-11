@@ -33,9 +33,6 @@ class OrganizationSerializer(serializers.ModelSerializer):
         """
         Custom validation to ensure organization name is unique before proceeding.
         """
-        # Remove admin_data before calling super validation, if necessary, 
-        # but in this case, the AdminSetupSerializer handles its own validation.
         return data
+        
 
-# Note: We skip the create method here and rely on the custom logic in the 
-# InitialSetupView's create() method to handle the transaction.

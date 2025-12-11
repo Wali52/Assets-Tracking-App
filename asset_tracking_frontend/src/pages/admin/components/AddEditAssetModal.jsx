@@ -251,7 +251,7 @@ const AddEditAssetModal = ({ asset, onClose, onSuccess }) => {
                                     <option value="Available">Available</option>
                                     <option value="Assigned">Assigned</option>
                                     <option value="Maintenance">Maintenance</option>
-                                    <option value="Retired">Retired</option> 
+                                    {/* <option value="Retired">Retired</option>  */}
                                 </select>
                             </div>
                         ) : (

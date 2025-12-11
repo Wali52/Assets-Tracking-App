@@ -736,3 +736,58 @@ background-color: #a18a2e;
     gap: 8px; /* Spacing between Edit and Delete buttons */
     align-items: center;
 }
+
+
+/* APPROVE BUTTON (Green) */
+.btn-approve {
+    background-color: #28a745;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.15s ease;
+}
+
+.btn-approve:hover {
+    background-color: #218838;
+    transform: translateY(-2px);
+}
+
+.btn-approve:disabled {
+    background-color: #6ccf8a;
+    cursor: not-allowed;
+}
+
+/* DENY BUTTON (Red) */
+.btn-deny {
+    background-color: #dc3545;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.15s ease;
+}
+
+.btn-deny:hover {
+    background-color: #c82333;
+    transform: translateY(-2px);
+}
+
+.btn-deny:disabled {
+    background-color: #e88d95;
+    cursor: not-allowed;
+}
+
+.btn-approve {
+    background-color: #28a745 !important;
+    color: white !important;
+}
+
+.btn-deny {
+    background-color: #dc3545 !important;
+    color: white !important;
+}

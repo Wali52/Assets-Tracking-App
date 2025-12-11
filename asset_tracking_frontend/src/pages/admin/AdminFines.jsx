@@ -123,7 +123,7 @@ const AdminFines = () => {
                                     {/* Approve Button */}
                                     <button 
                                         onClick={() => handleApprovePayment(a.id)} 
-                                        className="btn-success btn-sm"
+                                        className="btn-approve"
                                         disabled={actionLoading}
                                     >
                                         Approve
@@ -132,7 +132,7 @@ const AdminFines = () => {
                                     {/* Deny Button */}
                                     <button 
                                         onClick={() => handleDenyPayment(a.id)} 
-                                        className="btn-danger btn-sm"
+                                        className="btn-deny"
                                         disabled={actionLoading}
                                     >
                                         Deny

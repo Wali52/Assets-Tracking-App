@@ -1,415 +1,3 @@
-// /* src/context/AuthContext.jsx - Now includes dependency logic for self-containment */
-// import React, { createContext, useState, useEffect, useContext } from 'react';
-// import axios from 'axios';
-
-// // --- Configuration & Constants ---
-// const API_BASE_URL = 'http://127.0.0.1:8000/api/v1/';
-// const ACCESS_KEY = 'accessToken';
-// const REFRESH_KEY = 'refreshToken';
-// const ROLE_KEY = 'role';
-// const USER_KEY = 'user';
-
-// // --- Auth Storage Service (authService.js Logic Integrated) ---
-// const authService = {
-//     setAccessToken: (token) => { if (token) localStorage.setItem(ACCESS_KEY, token); },
-//     getAccessToken: () => localStorage.getItem(ACCESS_KEY),
-//     setRefreshToken: (token) => { if (token) localStorage.setItem(REFRESH_KEY, token); },
-//     getRefreshToken: () => localStorage.getItem(REFRESH_KEY),
-//     setRole: (role) => { if (role) localStorage.setItem(ROLE_KEY, role); },
-//     getRole: () => localStorage.getItem(ROLE_KEY),
-//     setUser: (user) => { if (user) localStorage.setItem(USER_KEY, JSON.stringify(user)); },
-//     getUser: () => {
-//         const raw = localStorage.getItem(USER_KEY);
-//         return raw ? JSON.parse(raw) : null;
-//     },
-//     clearAuthStorage: () => {
-//         localStorage.removeItem(ACCESS_KEY);
-//         localStorage.removeItem(REFRESH_KEY);
-//         localStorage.removeItem(ROLE_KEY);
-//         localStorage.removeItem(USER_KEY);
-//     },
-//     // Login function: organization_id removed per user request
-//     login: async ({ email, password }) => {
-//         const res = await apiClient.post('auth/token/', { 
-//             email: email, 
-//             password: password, 
-//         }); 
-        
-//         const { access, refresh } = res.data || {};
-//         const role = res.data.role || 'Employee';
-    
-//         authService.setAccessToken(access);
-//         authService.setRefreshToken(refresh);
-//         authService.setRole(role);
-//         if (res.data.user) authService.setUser(res.data.user);
-    
-//         return res.data;
-//     },
-//     logout: async () => {
-//         authService.clearAuthStorage();
-//     }
-// };
-
-// // --- API Client Setup (axiosInstance.js Logic Integrated) ---
-// const apiClient = axios.create({
-//     baseURL: API_BASE_URL,
-//     headers: {
-//         'Content-Type': 'application/json',
-//         'Accept': 'application/json',
-//     },
-// });
-
-// let isRefreshing = false;
-// let failedQueue = [];
-
-// const processQueue = (error, token = null) => {
-//     failedQueue.forEach(prom => {
-//         if (error) prom.reject(error);
-//         else prom.resolve(token);
-//     });
-//     failedQueue = [];
-// };
-
-// apiClient.interceptors.request.use(
-//     (config) => {
-//         const token = authService.getAccessToken();
-//         if (token) {
-//             config.headers.Authorization = `Bearer ${token}`;
-//         }
-//         return config;
-//     },
-//     (error) => Promise.reject(error)
-// );
-
-// apiClient.interceptors.response.use(
-//     (response) => response,
-//     async (error) => {
-//         const originalRequest = error.config;
-
-//         if (!originalRequest) return Promise.reject(error);
-
-//         // If 401 and not an auth route, try refresh
-//         if (error.response && error.response.status === 401 && !originalRequest._retry && !originalRequest.url.includes('auth/token/refresh')) {
-//             originalRequest._retry = true;
-
-//             if (isRefreshing) {
-//                 return new Promise(function (resolve, reject) {
-//                     failedQueue.push({ resolve, reject });
-//                 }).then((token) => {
-//                     originalRequest.headers.Authorization = `Bearer ${token}`;
-//                     return apiClient(originalRequest);
-//                 }).catch((err) => Promise.reject(err));
-//             }
-
-//             isRefreshing = true;
-
-//             try {
-//                 const refreshToken = authService.getRefreshToken();
-//                 if (!refreshToken) {
-//                     authService.clearAuthStorage();
-//                     isRefreshing = false;
-//                     // Force redirect to login on failure (in a full React app, use navigate, but here we enforce signout)
-//                     // window.location.href = '/login'; // This is handled by routing higher up
-//                     return Promise.reject(error);
-//                 }
-
-//                 // Call the token refresh endpoint using standard axios instance
-//                 const refreshResponse = await axios.post(`${API_BASE_URL}auth/token/refresh/`, { refresh: refreshToken });
-//                 const newAccessToken = refreshResponse.data.access;
-//                 authService.setAccessToken(newAccessToken);
-
-//                 processQueue(null, newAccessToken);
-
-//                 originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-//                 isRefreshing = false;
-//                 return apiClient(originalRequest);
-//             } catch (err) {
-//                 processQueue(err, null);
-//                 authService.clearAuthStorage();
-//                 isRefreshing = false;
-//                 // window.location.href = '/login'; // This is handled by routing higher up
-//                 return Promise.reject(err);
-//             }
-//         }
-
-//         return Promise.reject(error);
-//     }
-// );
-
-
-// // --- Auth Context and Provider ---
-// const AuthContext = createContext(null);
-
-// export const AuthProvider = ({ children }) => {
-//     const [role, setRole] = useState(authService.getRole());
-//     const [isAuthenticated, setIsAuthenticated] = useState(!!authService.getAccessToken());
-//     const [currentUser, setCurrentUser] = useState(authService.getUser());
-//     const [loading, setLoading] = useState(false);
-
-//     useEffect(() => {
-//         // Initial state load
-//         setRole(authService.getRole());
-//         setIsAuthenticated(!!authService.getAccessToken());
-//         setCurrentUser(authService.getUser());
-//     }, []);
-
-//     // FIX: login signature is correct, now calls the integrated authService.login
-//     const login = async ({ email, password }) => {
-//         setLoading(true);
-//         try {
-//             const data = await authService.login({ email, password });
-            
-//             // Update local context state based on storage after successful login
-//             setRole(authService.getRole());
-//             setIsAuthenticated(true);
-//             setCurrentUser(authService.getUser());
-//             setLoading(false);
-//             return data;
-//         } catch (err) {
-//             setLoading(false);
-//             throw err;
-//         }
-//     };
-
-//     const logout = async () => {
-//         await authService.logout();
-//         setRole(null);
-//         setIsAuthenticated(false);
-//         setCurrentUser(null);
-//     };
-
-//     const value = {
-//         role,
-//         isAuthenticated,
-//         currentUser,
-//         login,
-//         logout,
-//         loading,
-//         axios: apiClient, // expose the configured instance for API calls
-//     };
-
-//     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-// };
-
-// export const useAuth = () => useContext(AuthContext);
-// export default AuthContext;
-
-
-
-
-/* src/context/AuthContext.jsx - Corrected to resolve initialization and scoping issues */
-// import React, { createContext, useState, useEffect, useContext } from 'react';
-// import axios from 'axios';
-
-// // --- Configuration & Constants ---
-// const API_BASE_URL = 'http://127.0.0.1:8000/api/v1/';
-// const ACCESS_KEY = 'accessToken';
-// const REFRESH_KEY = 'refreshToken';
-// const ROLE_KEY = 'role';
-// const USER_KEY = 'user';
-
-// // Define standard roles for use in the context and UI
-// export const ROLE_ADMIN = 'Admin'; 
-// export const ROLE_EMPLOYEE = 'Employee'; 
-
-// // --- API Client Setup (axiosInstance.js Logic Integrated) ---
-// const apiClient = axios.create({
-//     baseURL: API_BASE_URL,
-//     headers: {
-//         'Content-Type': 'application/json',
-//         'Accept': 'application/json',
-//     },
-// });
-
-// let isRefreshing = false;
-// let failedQueue = [];
-
-// const processQueue = (error, token = null) => {
-//     failedQueue.forEach(prom => {
-//         if (error) prom.reject(error);
-//         else prom.resolve(token);
-//     });
-//     failedQueue = [];
-// };
-
-// // ... Interceptors remain correct ...
-// apiClient.interceptors.request.use(
-//     (config) => {
-//         const token = authService.getAccessToken();
-//         if (token) {
-//             config.headers.Authorization = `Bearer ${token}`;
-//         }
-//         return config;
-//     },
-//     (error) => Promise.reject(error)
-// );
-
-// apiClient.interceptors.response.use(
-//     (response) => response,
-//     async (error) => {
-//         const originalRequest = error.config;
-//         if (!originalRequest) return Promise.reject(error);
-//         // If 401 and not an auth route, try refresh
-//         if (error.response && error.response.status === 401 && !originalRequest._retry && !originalRequest.url.includes('auth/token/refresh')) {
-//             originalRequest._retry = true;
-
-//             if (isRefreshing) {
-//                 return new Promise(function (resolve, reject) {
-//                     failedQueue.push({ resolve, reject });
-//                 }).then((token) => {
-//                     originalRequest.headers.Authorization = `Bearer ${token}`;
-//                     return apiClient(originalRequest);
-//                 }).catch((err) => Promise.reject(err));
-//             }
-
-//             isRefreshing = true;
-
-//             try {
-//                 const refreshToken = authService.getRefreshToken();
-//                 if (!refreshToken) {
-//                     authService.clearAuthStorage();
-//                     isRefreshing = false;
-//                     return Promise.reject(error);
-//                 }
-
-//                 const refreshResponse = await axios.post(`${API_BASE_URL}auth/token/refresh/`, { refresh: refreshToken });
-//                 const newAccessToken = refreshResponse.data.access;
-//                 authService.setAccessToken(newAccessToken);
-
-//                 processQueue(null, newAccessToken);
-
-//                 originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-//                 isRefreshing = false;
-//                 return apiClient(originalRequest);
-//             } catch (err) {
-//                 processQueue(err, null);
-//                 authService.clearAuthStorage();
-//                 isRefreshing = false;
-//                 return Promise.reject(err);
-//             }
-//         }
-
-//         return Promise.reject(error);
-//     }
-// );
-
-
-// // --- Auth Storage Service (authService.js Logic Integrated) ---
-// const authService = {
-//     setAccessToken: (token) => { if (token) localStorage.setItem(ACCESS_KEY, token); },
-//     getAccessToken: () => localStorage.getItem(ACCESS_KEY),
-//     setRefreshToken: (token) => { if (token) localStorage.setItem(REFRESH_KEY, token); },
-//     getRefreshToken: () => localStorage.getItem(REFRESH_KEY),
-
-//     // 🔴 FIX: This is now largely redundant but kept for completeness
-//     setRole: (role) => { if (role) localStorage.setItem(ROLE_KEY, role); },
-    
-//     // ✅ FIX APPLIED HERE: Prioritize reading the role from the 'user' object
-//     getRole: () => {
-//         const user = authService.getUser();
-//         // If the user object is present, return the role from there.
-//         // Fallback to the separate ROLE_KEY string only if the user object is missing.
-//         return user?.role || localStorage.getItem(ROLE_KEY);
-//     },
-
-//     setUser: (user) => { if (user) localStorage.setItem(USER_KEY, JSON.stringify(user)); },
-//     getUser: () => {
-//         const raw = localStorage.getItem(USER_KEY);
-//         return raw ? JSON.parse(raw) : null;
-//     },
-
-//     // ✅ FIX APPLIED HERE: Ensure the stale ROLE_KEY is explicitly removed
-//     clearAuthStorage: () => {
-//         localStorage.removeItem(ACCESS_KEY);
-//         localStorage.removeItem(REFRESH_KEY);
-//         localStorage.removeItem(ROLE_KEY); 
-//         localStorage.removeItem(USER_KEY);
-//     },
-
-//     login: async ({ email, password }) => {
-//         const res = await axios.post(`${API_BASE_URL}auth/token/`, { 
-//             email: email, 
-//             password: password, 
-//         }); 
-//         
-//         const { access, refresh } = res.data || {};
-//         const role = res.data.role || ROLE_EMPLOYEE;
-//     
-//         // 💡 CRITICAL ORDER: Store user data first if it's available
-//         if (res.data.user) authService.setUser(res.data.user);
-
-//         authService.setAccessToken(access);
-//         authService.setRefreshToken(refresh);
-//         authService.setRole(role); // Sets the separate ROLE_KEY string
-//     
-//         return res.data;
-//     },
-//     logout: async () => {
-//         authService.clearAuthStorage();
-//     }
-// };
-
-
-// // --- Auth Context and Provider ---
-// const AuthContext = createContext(null);
-
-// export const AuthProvider = ({ children }) => {
-//     // State initialization must happen AFTER authService is defined
-//     const [role, setRole] = useState(authService.getRole());
-//     const [isAuthenticated, setIsAuthenticated] = useState(!!authService.getAccessToken());
-//     const [currentUser, setCurrentUser] = useState(authService.getUser());
-//     const [loading, setLoading] = useState(false);
-
-//     useEffect(() => {
-//         // Initial state load
-//         setRole(authService.getRole());
-//         setIsAuthenticated(!!authService.getAccessToken());
-//         setCurrentUser(authService.getUser());
-//     }, []);
-
-//     const login = async ({ email, password }) => {
-//         setLoading(true);
-//         try {
-//             const data = await authService.login({ email, password });
-//             
-//             // Update local context state based on storage after successful login
-//             setRole(authService.getRole());
-//             setIsAuthenticated(true);
-//             setCurrentUser(authService.getUser());
-//             setLoading(false);
-//             return data;
-//         } catch (err) {
-//             setLoading(false);
-//             throw err;
-//         }
-//     };
-
-//     const logout = async () => {
-//         await authService.logout();
-//         setRole(null);
-//         setIsAuthenticated(false);
-//         setCurrentUser(null);
-//     };
-
-//     const value = {
-//         role,
-//         isAuthenticated,
-//         currentUser,
-//         login,
-//         logout,
-//         loading,
-//         axios: apiClient, // expose the configured instance for API calls
-//         ROLE_ADMIN, // Expose constants for use in Sidebar/Router
-//         ROLE_EMPLOYEE,
-//     };
-
-//     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-// };
-
-// export const useAuth = () => useContext(AuthContext);
-// export default AuthContext;
-
-/* src/context/AuthContext.jsx */
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 
@@ -419,82 +7,72 @@ const ACCESS_KEY = 'accessToken';
 const REFRESH_KEY = 'refreshToken';
 const ROLE_KEY = 'role';
 const USER_KEY = 'user';
-const ORG_KEY = 'organization'; // New key for organization data
+const ORG_KEY = 'organization';
+const ACTIVE_USER_KEY = 'activeUserId'; // ID of currently active user in this tab
 
 // Define standard roles
-export const ROLE_ADMIN = 'Admin'; 
-export const ROLE_EMPLOYEE = 'Employee'; 
+export const ROLE_ADMIN = 'Admin';
+export const ROLE_EMPLOYEE = 'Employee';
 
-// --- API Client Setup (axiosInstance.js Logic Integrated) ---
+// --- Axios Instance ---
 const apiClient = axios.create({
     baseURL: API_BASE_URL,
-    headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
 });
 
 let isRefreshing = false;
 let failedQueue = [];
 
 const processQueue = (error, token = null) => {
-    failedQueue.forEach(prom => {
-        if (error) prom.reject(error);
-        else prom.resolve(token);
+    failedQueue.forEach(p => {
+        if (error) p.reject(error);
+        else p.resolve(token);
     });
     failedQueue = [];
 };
 
 // Request Interceptor
 apiClient.interceptors.request.use(
-    (config) => {
+    config => {
         const token = authService.getAccessToken();
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
+        if (token) config.headers.Authorization = `Bearer ${token}`;
         return config;
     },
-    (error) => Promise.reject(error)
+    error => Promise.reject(error)
 );
 
 // Response Interceptor for Token Refresh
 apiClient.interceptors.response.use(
-    (response) => response,
-    async (error) => {
+    response => response,
+    async error => {
         const originalRequest = error.config;
-
         if (!originalRequest) return Promise.reject(error);
 
-        // If 401 and not an auth route, try refresh
-        if (error.response && error.response.status === 401 && !originalRequest._retry && !originalRequest.url.includes('auth/token/refresh')) {
+        if (error.response?.status === 401 &&
+            !originalRequest._retry &&
+            !originalRequest.url.includes('auth/token/refresh')) {
+            
             originalRequest._retry = true;
 
             if (isRefreshing) {
-                return new Promise(function (resolve, reject) {
+                return new Promise((resolve, reject) => {
                     failedQueue.push({ resolve, reject });
-                }).then((token) => {
+                }).then(token => {
                     originalRequest.headers.Authorization = `Bearer ${token}`;
                     return apiClient(originalRequest);
-                }).catch((err) => Promise.reject(err));
+                }).catch(err => Promise.reject(err));
             }
 
             isRefreshing = true;
-
             try {
                 const refreshToken = authService.getRefreshToken();
-                if (!refreshToken) {
-                    authService.clearAuthStorage();
-                    isRefreshing = false;
-                    return Promise.reject(error);
-                }
+                if (!refreshToken) throw new Error("No refresh token");
 
-                // Call the token refresh endpoint using standard axios instance
                 const refreshResponse = await axios.post(`${API_BASE_URL}auth/token/refresh/`, { refresh: refreshToken });
                 const newAccessToken = refreshResponse.data.access;
                 authService.setAccessToken(newAccessToken);
 
                 processQueue(null, newAccessToken);
-
                 originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
                 isRefreshing = false;
                 return apiClient(originalRequest);
@@ -510,104 +88,106 @@ apiClient.interceptors.response.use(
     }
 );
 
-
-// --- Auth Storage Service (authService.js Logic Integrated) ---
+// --- Auth Service with Multi-Account Support ---
 const authService = {
-    setAccessToken: (token) => { if (token) localStorage.setItem(ACCESS_KEY, token); },
-    getAccessToken: () => localStorage.getItem(ACCESS_KEY),
-    setRefreshToken: (token) => { if (token) localStorage.setItem(REFRESH_KEY, token); },
-    getRefreshToken: () => localStorage.getItem(REFRESH_KEY),
+    _userKey: id => `${USER_KEY}_${id}`,
+    _accessKey: id => `${ACCESS_KEY}_${id}`,
+    _refreshKey: id => `${REFRESH_KEY}_${id}`,
+    _roleKey: id => `${ROLE_KEY}_${id}`,
+    _orgKey: id => `${ORG_KEY}_${id}`,
 
-    setRole: (role) => { if (role) localStorage.setItem(ROLE_KEY, role); },
+    setActiveUserId: id => sessionStorage.setItem(ACTIVE_USER_KEY, id),
+    getActiveUserId: () => sessionStorage.getItem(ACTIVE_USER_KEY),
+
+    setAccessToken: (token, userId) => sessionStorage.setItem(authService._accessKey(userId), token),
+    getAccessToken: () => {
+        const id = authService.getActiveUserId();
+        return id ? sessionStorage.getItem(authService._accessKey(id)) : null;
+    },
+
+    setRefreshToken: (token, userId) => sessionStorage.setItem(authService._refreshKey(userId), token),
+    getRefreshToken: () => {
+        const id = authService.getActiveUserId();
+        return id ? sessionStorage.getItem(authService._refreshKey(id)) : null;
+    },
+
+    setRole: (role, userId) => sessionStorage.setItem(authService._roleKey(userId), role),
     getRole: () => {
-        const user = authService.getUser();
-        // Prioritize reading the role from the 'user' object for reliability
-        return user?.role || localStorage.getItem(ROLE_KEY);
+        const id = authService.getActiveUserId();
+        return id ? sessionStorage.getItem(authService._roleKey(id)) : null;
     },
 
-    setUser: (user) => { if (user) localStorage.setItem(USER_KEY, JSON.stringify(user)); },
+    setUser: (user) => {
+        sessionStorage.setItem(authService._userKey(user.id), JSON.stringify(user));
+        authService.setActiveUserId(user.id);
+    },
     getUser: () => {
-        const raw = localStorage.getItem(USER_KEY);
+        const id = authService.getActiveUserId();
+        if (!id) return null;
+        const raw = sessionStorage.getItem(authService._userKey(id));
         return raw ? JSON.parse(raw) : null;
     },
-    
-    // START FIX: Organization Data Management
-    setOrganizationData: (org) => { if (org) localStorage.setItem(ORG_KEY, JSON.stringify(org)); },
+
+    setOrganizationData: (org, userId) => sessionStorage.setItem(authService._orgKey(userId), JSON.stringify(org)),
     getOrganizationData: () => {
-        const raw = localStorage.getItem(ORG_KEY);
+        const id = authService.getActiveUserId();
+        if (!id) return null;
+        const raw = sessionStorage.getItem(authService._orgKey(id));
         return raw ? JSON.parse(raw) : null;
     },
-    // END FIX
 
     clearAuthStorage: () => {
-        localStorage.removeItem(ACCESS_KEY);
-        localStorage.removeItem(REFRESH_KEY);
-        localStorage.removeItem(ROLE_KEY); 
-        localStorage.removeItem(USER_KEY);
-        localStorage.removeItem(ORG_KEY); // Clear the new key
+        const id = authService.getActiveUserId();
+        if (!id) return;
+        sessionStorage.removeItem(authService._accessKey(id));
+        sessionStorage.removeItem(authService._refreshKey(id));
+        sessionStorage.removeItem(authService._roleKey(id));
+        sessionStorage.removeItem(authService._userKey(id));
+        sessionStorage.removeItem(authService._orgKey(id));
+        sessionStorage.removeItem(ACTIVE_USER_KEY);
     },
 
     login: async ({ email, password }) => {
-        const res = await axios.post(`${API_BASE_URL}auth/token/`, { 
-            email: email, 
-            password: password, 
-        }); 
-        
-        const { access, refresh } = res.data || {};
-        const role = res.data.role || ROLE_EMPLOYEE;
-    
-        if (res.data.user) {
-            const user = res.data.user;
-            
-            // CRITICAL: Extract and store organization data *before* storing the user
-            authService.setOrganizationData(user.organization);
-            authService.setUser(user);
-        }
+        const res = await axios.post(`${API_BASE_URL}auth/token/`, { email, password });
+        const { access, refresh, user } = res.data;
 
-        authService.setAccessToken(access);
-        authService.setRefreshToken(refresh);
-        authService.setRole(role); 
-    
-        return res.data;
+        if (!user) throw new Error("No user returned from server");
+
+        // Use the role returned from server inside user object if available
+        const role = user.role || res.data.role || ROLE_EMPLOYEE;
+
+        authService.setUser(user);
+        authService.setOrganizationData(user.organization, user.id);
+        authService.setAccessToken(access, user.id);
+        authService.setRefreshToken(refresh, user.id);
+        authService.setRole(role, user.id);
+
+        return { access, refresh, user, role };
     },
-    
+
     logout: async () => {
         authService.clearAuthStorage();
     }
 };
 
-
-// --- Auth Context and Provider ---
+// --- Auth Context ---
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-    // START FIX: Initialize with Organization data
-    const [organizationData, setOrganizationData] = useState(authService.getOrganizationData()); 
-    // END FIX
-    
+    const [currentUser, setCurrentUser] = useState(authService.getUser());
     const [role, setRole] = useState(authService.getRole());
     const [isAuthenticated, setIsAuthenticated] = useState(!!authService.getAccessToken());
-    const [currentUser, setCurrentUser] = useState(authService.getUser());
+    const [organizationData, setOrganizationData] = useState(authService.getOrganizationData());
     const [loading, setLoading] = useState(false);
-
-    useEffect(() => {
-        // Initial state load
-        setRole(authService.getRole());
-        setIsAuthenticated(!!authService.getAccessToken());
-        setCurrentUser(authService.getUser());
-        setOrganizationData(authService.getOrganizationData()); // Load Organization Data
-    }, []);
 
     const login = async ({ email, password }) => {
         setLoading(true);
         try {
             const data = await authService.login({ email, password });
-            
-            // Update local context state after successful login
-            setRole(authService.getRole());
-            setIsAuthenticated(true);
             setCurrentUser(authService.getUser());
-            setOrganizationData(authService.getOrganizationData()); // Set Organization Data on login
+            setRole(authService.getRole()); // Correct role loaded from sessionStorage
+            setOrganizationData(authService.getOrganizationData());
+            setIsAuthenticated(true);
             setLoading(false);
             return data;
         } catch (err) {
@@ -618,22 +198,32 @@ export const AuthProvider = ({ children }) => {
 
     const logout = async () => {
         await authService.logout();
-        setRole(null);
-        setIsAuthenticated(false);
         setCurrentUser(null);
-        setOrganizationData(null); // Clear Organization Data on logout
+        setRole(null);
+        setOrganizationData(null);
+        setIsAuthenticated(false);
+    };
+
+    // Switch active user (without logging out)
+    const switchUser = (userId) => {
+        authService.setActiveUserId(userId);
+        setCurrentUser(authService.getUser());
+        setRole(authService.getRole());
+        setOrganizationData(authService.getOrganizationData());
+        setIsAuthenticated(!!authService.getAccessToken());
     };
 
     const value = {
+        currentUser,
         role,
         isAuthenticated,
-        currentUser,
-        organizationData, // Expose the organization data for use in components like the modal
+        organizationData,
         login,
         logout,
+        switchUser,
         loading,
-        axios: apiClient, 
-        ROLE_ADMIN, 
+        axios: apiClient,
+        ROLE_ADMIN,
         ROLE_EMPLOYEE,
     };
 

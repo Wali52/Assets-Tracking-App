@@ -94,7 +94,7 @@ const AdminUsers = () => {
                     {/* EDIT Button - Using btn-link-edit for consistency */}
                     <button 
                         onClick={() => handleEditUser(user)}
-                        className="btn-link-edit" // ⭐ USING LINK STYLE
+                        className="btn-edit btn-sm" // ⭐ USING LINK STYLE
                         disabled={actionLoading}
                     >
                         Edit Role
@@ -103,7 +103,7 @@ const AdminUsers = () => {
                     {user.role !== 'Super Admin' && (
                         <button 
                             onClick={() => handleDeleteClick(user)}
-                            className="btn-link-delete" // ⭐ USING LINK STYLE
+                            className="btn-danger btn-sm" // ⭐ USING LINK STYLE
                             disabled={actionLoading}
                         >
                             Delete

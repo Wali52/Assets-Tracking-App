@@ -161,14 +161,14 @@ const AdminCategories = () => {
                                 <div className="list-actions">
                                     <button 
                                         onClick={() => handleEditSetup(c)}
-                                        className="btn-link-edit"
+                                        className="btn-edit btn-sm"
                                         disabled={submitting}
                                     >
                                         Edit
                                     </button>
                                     <button
                                         onClick={() => handleDelete(c.id)}
-                                        className="btn-link-delete"
+                                        className="btn-danger btn-sm"
                                         disabled={submitting}
                                     >
                                         Delete
